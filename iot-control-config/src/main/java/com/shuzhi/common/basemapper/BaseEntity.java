@@ -7,14 +7,13 @@ import javax.persistence.Transient;
 import java.io.Serializable;
 
 /**
- * @ProjectName: iot-control
- * @Package: com.shuzhi.common.basemapper
- * @ClassName: BaseEntity
- * @Author: 陈鑫晖
- * @Date: 2019/7/22 19:11
+ * @author zgk
+ * @description 实体类通用属性
+ * @date 2019-04-29 10:20
  */
 @Data
 public class BaseEntity implements Serializable {
+
     private static final long serialVersionUID = 1L;
 
     /**
@@ -45,4 +44,5 @@ public class BaseEntity implements Serializable {
     public String toString() {
         return JSON.toJSONString(this);
     }
+
 }

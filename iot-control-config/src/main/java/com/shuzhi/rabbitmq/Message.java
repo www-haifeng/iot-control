@@ -4,7 +4,6 @@ package com.shuzhi.rabbitmq;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * @Program: 封装json

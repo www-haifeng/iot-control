@@ -1,7 +1,6 @@
 package com.shuzhi.websocket.socketvo;
 
 import lombok.Data;
-import lombok.ToString;
 
 import java.util.List;
 

@@ -2,12 +2,13 @@ package com.shuzhi.entity;
 
 import com.shuzhi.common.basemapper.BaseEntity;
 import lombok.Data;
-
 import lombok.EqualsAndHashCode;
-import javax.persistence.*;
-import java.util.Date;
-import java.io.Serializable;
 
+import javax.persistence.Column;
+import javax.persistence.Id;
+import javax.persistence.Table;
+import java.io.Serializable;
+import java.util.Date;
 
 
 /**

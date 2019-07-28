@@ -1,5 +1,7 @@
 package com.shuzhi.utils;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 /**
@@ -14,11 +16,11 @@ public class SecurityUtils {
      *
      * @return 当前登录人的信息
      */
-   /* public static UserDetails getUserDetails() {
+    public static UserDetails getUserDetails() {
         return (UserDetails) SecurityContextHolder.getContext()
                 .getAuthentication()
                 .getPrincipal();
-    }*/
+    }
 
     /**
      * 加密密码
