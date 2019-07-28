@@ -1,5 +1,8 @@
 package com.shuzhi.websocket;
 
+
+
+
 import com.alibaba.fastjson.JSON;
 import com.shuzhi.entity.DeviceLoop;
 import com.shuzhi.entity.DeviceStation;
@@ -8,10 +11,10 @@ import com.shuzhi.lcd.entities.IotLcdStatusTwo;
 import com.shuzhi.lcd.service.IotLcdsStatusService;
 import com.shuzhi.led.entities.TStatusDto;
 import com.shuzhi.led.service.TStatusService;
+import com.shuzhi.light.entities.StatisticsVo;
 import com.shuzhi.light.entities.TLoopStateDto;
 import com.shuzhi.light.service.LoopStatusServiceApi;
 import com.shuzhi.rabbitmq.Message;
-import com.shuzhi.light.entities.StatisticsVo;
 import com.shuzhi.service.DeviceLoopService;
 import com.shuzhi.service.DeviceStationService;
 import com.shuzhi.service.MqMessageService;
@@ -61,7 +64,7 @@ public class WebSocketServer {
 
     private static Map<String, CopyOnWriteArrayList<Session>> SESSION_MAP = new ConcurrentHashMap<>();
 
-    static CopyOnWriteArrayList<String> SESSION_ID_LIST = new CopyOnWriteArrayList<>();
+    private static Hashtable<String,Integer> sessionCodeMap = new Hashtable<>();
 
     /**
      * lcd设备状态
@@ -84,7 +87,7 @@ public class WebSocketServer {
      */
     @OnOpen
     public synchronized void onOpen(Session session) {
-       
+
     }
 
 
@@ -111,19 +114,8 @@ public class WebSocketServer {
         AtomicInteger size = new AtomicInteger();
         SESSION_MAP.forEach((s, sessions1) -> size.set(sessions1.size() + size.get()));
         log.info("当前的session数量 : {}", size);
-        //推送消息到页面
-        Optional.ofNullable(session).ifPresent(session1 -> {
-            String uuid = message1.getModulecode() + session.getId();
-            SESSION_ID_LIST.add(uuid);
-            try {
-                HashMap<String,String> map = new HashMap<>(1);
-                map.put("sessionId",uuid);
-                session1.getBasicRemote().sendText(JSON.toJSONString(map));
-            } catch (IOException e) {
-                e.printStackTrace();
-                log.error("连接建立失败 sessionId : {}", session1.getId());
-            }
-        });
+        //保存主机标识
+        Optional.ofNullable(session).ifPresent(session1 -> sessionCodeMap.put(session.getId(), message1.getModulecode()));
         //判断消息类型
         switch (message1.getMsgtype()) {
             //请求
@@ -563,9 +555,11 @@ public class WebSocketServer {
     private boolean isOnClose(String code) {
         CopyOnWriteArrayList<Session> sessions = SESSION_MAP.get(code);
         if (sessions != null){
-            //遍历并判断该uuid是否在集合中存在  不存在说明该连接已经被关闭
-            long count = sessions.stream().filter(session ->SESSION_ID_LIST.contains(code + session.getId())).count();
-            return count > 0;
+            for (Session session : sessions) {
+                if (StringUtils.equals(code,String.valueOf(sessionCodeMap.get(session.getId())))){
+                    return true;
+                }
+            }
         }
         return false;
     }
@@ -668,6 +662,7 @@ public class WebSocketServer {
             SESSION_MAP = map;
             //删除缓存
             Optional.ofNullable(redisTemplate).orElseGet(() -> redisTemplate = ApplicationContextUtils.get(StringRedisTemplate.class));
+            sessionCodeMap.remove(session.getId());
             log.info("断开连接后session数量 : {}", SESSION_MAP.size());
         }
     }
