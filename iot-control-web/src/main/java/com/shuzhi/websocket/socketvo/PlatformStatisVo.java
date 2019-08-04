@@ -8,7 +8,7 @@ import lombok.Data;
  * @date 2019-07-23 17:05
  */
 @Data
-public class platformStatisVo {
+public class PlatformStatisVo {
 
     /**
      * 照明总数

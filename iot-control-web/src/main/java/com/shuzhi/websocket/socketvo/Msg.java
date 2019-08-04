@@ -13,9 +13,14 @@ import java.util.List;
 public class Msg {
 
     /**
-     * 命令类型：1-开启；2-关闭；3-重启；4-调光；5-音量
+     * lcd命令类型：1-开启；2-关闭；3-重启；4-调光；5-音量
      */
     private Integer cmdtype;
+
+    /**
+     * led命令类型：1-开启；2-关闭；3-重启
+     */
+    private Integer arg1;
 
     /**
      * 调光值(lcd不能调光)
@@ -42,5 +47,25 @@ public class Msg {
      */
     private List<String> lights;
 
+    /**
+     * 照明类型：1-灯箱；2-顶棚；3-logo
+     */
+    private Integer lighttype;
 
+    public void setLighttype(Integer lighttype) {
+
+        switch (lighttype){
+            case 1 :
+                this.lighttype = 3;
+                break;
+            case 2 :
+                this.lighttype = 1;
+                break;
+            case 3 :
+                this.lighttype = 2;
+                break;
+        }
+
+
+    }
 }

@@ -2,10 +2,11 @@ server:
   port: 9201
 
 mybatis:
-  type-aliases-package: com.shuzhi.entities    # 所有Entity别名类所在包
-  type-handlers-package: com.shuzhi.util       #配置mybaits自定义类型转换类所在的包
-  mapper-locations:
-  - classpath:mybatis/mapper/**/*.xml                       # mapper映射文件
+  type-aliases-package: com.shuzhi.entity
+  mapper-locations: classpath:mapper/*.xml,classpath*:sdk/mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
 
 spring:
    application:
@@ -13,7 +14,7 @@ spring:
    datasource:
     type: com.alibaba.druid.pool.DruidDataSource            # 当前数据源操作类型
     driver-class-name: org.postgresql.Driver              # mysql驱动包
-    url: jdbc:postgresql://192.168.7.68:5432/iot-control?currentSchema=public&autoReconnect=true              # 数据库名称
+    url: jdbc:postgresql://192.168.7.68:5432/bus-station-web?currentSchema=public&autoReconnect=true              # 数据库名称
     username: postgres
     password: 123456
     dbcp2:
@@ -43,3 +44,19 @@ eureka:
   instance:
     instance-id: iot-control-web9201
     prefer-ip-address: true     #访问路径可以显示IP地址
+
+send:
+  #超时时间 单位: 秒
+  run-time: 20
+  #重试次数
+  count: 2
+  #websocket推送重试次数
+  retry: 2
+  #定时取数据的cron
+  led-cron: "*/5 * * * * ?"
+  light-cron: "*/5 * * * * ?"
+  lcd-cron: "*/5 * * * * ?"
+  platform-cron: "*/5 * * * * ?"
+  frt-cron: "*/500 * * * * ?"
+  lectricity-cron: "*/5 * * * * ?"
+  spon-cron: "*/500 * * * * ?"

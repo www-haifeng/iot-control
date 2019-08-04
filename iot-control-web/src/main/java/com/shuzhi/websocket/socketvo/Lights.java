@@ -2,8 +2,8 @@ package com.shuzhi.websocket.socketvo;
 
 import com.shuzhi.entity.DeviceLoop;
 import com.shuzhi.entity.DeviceStation;
+import com.shuzhi.entity.Station;
 import com.shuzhi.light.entities.TLoopStateDto;
-import com.shuzhi.service.DeviceLoopService;
 import com.shuzhi.service.DeviceStationService;
 import com.shuzhi.service.StationService;
 import com.shuzhi.websocket.ApplicationContextUtils;
@@ -83,46 +83,61 @@ public class Lights {
     private Long id;
 
 
-    public Lights(TLoopStateDto tLoopStateDto) {
+    public Lights(DeviceLoop deviceLoop, TLoopStateDto tLoopStateDto) {
 
         //通过回路号查询这个是什么设备
-        DeviceLoopService deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class);
         DeviceStationService deviceStationService = ApplicationContextUtils.get(DeviceStationService.class);
-        DeviceLoop deviceLoopSelect = new DeviceLoop();
-        deviceLoopSelect.setLoop(tLoopStateDto.getLoop());
-        DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
         //查出 对应的公交站id和名称
         DeviceStation deviceStationSelect = new DeviceStation(String.valueOf(deviceLoop.getDeviceDid()));
+        deviceStationSelect.setTypecode(deviceLoop.getTypecode());
         DeviceStation deviceStation = deviceStationService.selectOne(deviceStationSelect);
         StationService stationService = ApplicationContextUtils.get(StationService.class);
-        if (deviceStation != null){
+        if (deviceStation != null) {
             this.stationid = Long.valueOf(deviceStation.getStationid());
-            this.stationname = stationService.selectByPrimaryKey(deviceStation.getStationid()).getStationName();
+            Station station = stationService.selectByPrimaryKey(deviceStation.getStationid());
+            if (station != null) {
+                this.stationname = station.getStationName();
+            }
         }
         //判断这是什么设备
-        switch (deviceLoop.getTypecode()){
+        switch (deviceLoop.getTypecode()) {
             //灯箱
-            case "3" :
+            case "3":
                 this.lamphouseid = Long.valueOf(deviceLoop.getDeviceDid());
-                this.lamphouseonoff = tLoopStateDto.getState();
-                this.lamphouseline = Long.valueOf(tLoopStateDto.getState());
-
+                if (tLoopStateDto.getState() == 1) {
+                    this.lamphouseonoff = 0;
+                    this.lamphouseline = 0L;
+                } else {
+                    this.lamphouseonoff = 1;
+                    this.lamphouseline = 1L;
+                }
                 break;
             //顶棚
-            case "1" :
+            case "1":
                 this.platfondid = Long.valueOf(deviceLoop.getDeviceDid());
-                this.platfondline = Long.valueOf(tLoopStateDto.getState());
-                this.platfondonoff = tLoopStateDto.getState();
+                if (tLoopStateDto.getState() == 1) {
+                    this.platfondline = 0L;
+                    this.platfondonoff = 0;
+                } else {
+                    this.platfondline = 1L;
+                    this.platfondonoff = 1;
+                }
                 break;
             //log
-            case "2" :
+            case "2":
                 this.logoid = Long.valueOf(deviceLoop.getDeviceDid());
-                this.logoline = Long.valueOf(tLoopStateDto.getState());
-                this.logoonoff = tLoopStateDto.getState();
+                if (tLoopStateDto.getState() == 1) {
+                    this.logoline = 0L;
+                    this.logoonoff = 0;
+                } else {
+                    this.logoline = 1L;
+                    this.logoonoff = 1;
+                }
             default:
         }
         this.name = deviceLoop.getDeviceName();
         this.id = Long.valueOf(deviceLoop.getDeviceDid());
-        //this.stationid = Integer.valueOf(tLoopStateDto.getGatewayId());
     }
 }
+
+

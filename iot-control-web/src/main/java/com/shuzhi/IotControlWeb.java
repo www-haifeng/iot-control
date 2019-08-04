@@ -2,8 +2,10 @@ package com.shuzhi;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
+import org.springframework.cloud.netflix.feign.EnableFeignClients;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import tk.mybatis.spring.annotation.MapperScan;
 
 /**
 * @Program: IotControlWeb
@@ -12,8 +14,10 @@ import org.springframework.cloud.netflix.eureka.EnableEurekaClient;
 * @Create: 2019/7/22 16:58
 **/
 @SpringBootApplication
-@EnableEurekaClient //本服务启动后会自动注册进eureka服务中
-@EnableDiscoveryClient //服务发现
+@MapperScan("com.shuzhi.mapper")
+@EnableFeignClients(basePackages= {"com.shuzhi"})
+@EnableEurekaClient
+@EnableScheduling
 public class IotControlWeb {
     public static void main(String[] args)
     {

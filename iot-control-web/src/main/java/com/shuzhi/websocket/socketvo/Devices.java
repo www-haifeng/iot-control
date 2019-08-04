@@ -19,7 +19,7 @@ public class Devices {
     /**
      * 设备id
      */
-    private Integer id;
+    private Long id;
 
     /**
      * 设备类型 1-顶棚照明；2-灯箱照明；3-logo照明；4-LED；5-LCD
@@ -47,16 +47,22 @@ public class Devices {
     private Integer volume;
 
     /**
+     * 时间
+     */
+    private String timestamp;
+
+    /**
      * 封装lcd设备信息
      *
      * @param iotLcdStatus lcd设备信息
      */
     public Devices(IotLcdStatusTwo iotLcdStatus) {
-        this.id = Integer.valueOf(iotLcdStatus.getId());
+        this.id = Long.valueOf(iotLcdStatus.getId());
         this.type = 5;
         this.state = Integer.valueOf(iotLcdStatus.getStatus());
         this.onoff = this.state;
         this.volume = iotLcdStatus.getVolume();
+        this.timestamp = iotLcdStatus.getTimestamp();
 
     }
 
@@ -67,12 +73,13 @@ public class Devices {
      */
     public Devices(TStatusDto tStatusDto) {
 
-        this.id = Integer.valueOf(tStatusDto.getId());
+        this.id = Long.valueOf(tStatusDto.getId());
         this.type = 4;
         this.state = tStatusDto.getState();
         this.onoff = this.state;
         this.volume = tStatusDto.getVolume();
         this.light = tStatusDto.getLight();
+        this.timestamp = tStatusDto.getTimestamp();
     }
 
     /**
@@ -86,12 +93,14 @@ public class Devices {
         DeviceLoopService deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class);
         DeviceLoop deviceLoopSelect = new DeviceLoop();
         deviceLoopSelect.setLoop(loopStateDto.getLoop());
+        deviceLoopSelect.setGatewayDid(loopStateDto.getGatewayId());
         DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
 
-        this.id = loopStateDto.getId();
+        this.id = Long.valueOf(loopStateDto.getId());
         this.type = Integer.valueOf(deviceLoop.getTypecode());
         this.state = loopStateDto.getState();
         this.onoff = this.state;
+        this.timestamp = loopStateDto.getTimestamp();
     }
 
 }

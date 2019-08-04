@@ -59,7 +59,7 @@ public class RabbitProducer {
      *
      * @param message 消息实体
      */
-    public void sendMessage(SimpleProtocolVo message, Integer modulecode){
+    public void sendMessage(SimpleProtocolVo message,Integer modulecode){
 
         //线程等待
         Condition condition = lock.newCondition();
@@ -68,27 +68,29 @@ public class RabbitProducer {
         MqMessage mqMessageSelect = new MqMessage();
         mqMessageSelect.setModulecode(modulecode);
         MqMessage mqMessage = messageMapper.selectOne(mqMessageSelect);
-        //发送消息并等待
-        lock.lock();
-        messageWait(message, condition, mqMessage);
-        //等待指定秒数 或被唤醒后查看map中有没有 没有则代表收到了回执结束方法 有责再发一次
-        for (int i = 0; i < count; i++){
-            if (conditionHashtable.get(message.getMsgid()) != null){
-                //重新发送
-                log.info("未接收到消息回执 msgId : {} 重试第 {} 次",message.getMsgid(),i+1);
-                messageWait(message, condition, mqMessage);
-            }else {
-                //否则结束方法
-                lock.unlock();
-                return;
+        if (mqMessage != null){
+            //发送消息并等待
+            lock.lock();
+            messageWait(message, condition, mqMessage);
+            //等待指定秒数 或被唤醒后查看map中有没有 没有则代表收到了回执结束方法 有责再发一次
+            for (int i = 0; i < count; i++){
+                if (conditionHashtable.get(message.getMsgid()) != null){
+                    //重新发送
+                    log.info("未接收到消息回执 msgId : {} 重试第 {} 次",message.getMsgid(),i+1);
+                    messageWait(message, condition, mqMessage);
+                }else {
+                    //否则结束方法
+                    lock.unlock();
+                    return;
+                }
             }
+            log.info("获取回执消息失败 msgId : {}",message.getMsgid());
+            //清除redis缓存
+            redisTemplate.opsForHash().delete("web_socket_key", message.getMsgid());
+            //清除map
+            conditionHashtable.remove(message.getMsgid());
+            lock.unlock();
         }
-        log.info("获取回执消息失败 msgId : {}",message.getMsgid());
-        //清除redis缓存
-        redisTemplate.opsForHash().delete("web_socket_key", message.getMsgid());
-        //清除map
-        conditionHashtable.remove(message.getMsgid());
-        lock.unlock();
     }
 
     private void messageWait(SimpleProtocolVo message, Condition condition, MqMessage mqMessage) {

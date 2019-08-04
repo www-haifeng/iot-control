@@ -1,6 +1,7 @@
 package com.shuzhi.entity;
 
 import com.shuzhi.common.basemapper.BaseEntity;
+import com.shuzhi.light.entities.TLoopStateDto;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,44 +20,45 @@ import java.io.Serializable;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class DeviceLoop extends BaseEntity implements Serializable{
-private static final long serialVersionUID=1L;
+    private static final long serialVersionUID=1L;
 
-    
+
     @Id
     private Integer id;
-        
+
     /**
      * 类型编码
      */
     @Column(name = "typecode")
     private String typecode;
-        
+
     /**
      * 设备did
      */
     @Column(name = "device_did")
     private String deviceDid;
-        
+
     /**
      * 设备名称
      */
     @Column(name = "device_name")
     private String deviceName;
-        
+
     /**
      * 回路号
      */
     @Column(name = "loop")
     private Integer loop;
-        
+
     /**
      * 网关设备did
      */
     @Column(name = "gateway_did")
     private String gatewayDid;
 
-    public DeviceLoop(Integer id) {
-        this.loop = id;
+    public DeviceLoop(TLoopStateDto loopStateDto) {
+        this.loop = loopStateDto.getLoop();
+        this.gatewayDid = loopStateDto.getGatewayId();
     }
     public DeviceLoop() {
 

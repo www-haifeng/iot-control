@@ -12,9 +12,7 @@ import com.shuzhi.websocket.socketvo.MessageVo;
 import com.shuzhi.websocket.socketvo.Msg;
 import com.shuzhi.websocket.socketvo.SimpleProtocolVo;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -67,21 +65,6 @@ public class WebSocketController {
     }
 
     /**
-     * 关闭session 从session中移除
-     *
-     * @param sessionId 要关闭的sessionId
-     * @return 操作结果
-     */
-    @RequestMapping("/onClose/{sessionId}")
-    public synchronized Wrapper onClose(@PathVariable String sessionId) {
-        //从集合中将session移除
-        WebSocketServer.SESSION_ID_LIST.removeIf(s -> StringUtils.equals(sessionId,s));
-        return WrapMapper.ok();
-    }
-
-
-
-    /**
      * 拼装简易协议
      *
      * @param messageVo 前端协议
@@ -90,7 +73,7 @@ public class WebSocketController {
     private List<SimpleProtocolVo> assemble(MessageVo messageVo) {
         //判断是led 还是lcd 还是 照明
         List<SimpleProtocolVo> simpleProtocolVos = new ArrayList<>();
-        Msg msg = JSON.parseObject(JSON.toJSONString(messageVo.getMsg()), Msg.class);
+        Msg msg = JSON.parseObject(JSON.toJSONString(messageVo.getMsg()),Msg.class);
         //lcd设备
         lcdEquip(simpleProtocolVos, msg);
         //led设备
@@ -116,6 +99,7 @@ public class WebSocketController {
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
                 //通过设备id查出回路和网关id
                 deviceLoopSelect.setDeviceDid(light);
+                deviceLoopSelect.setTypecode(String.valueOf(msg.getLighttype()));
                 DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
                 //网关id
                 simpleProtocolVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
@@ -129,11 +113,12 @@ public class WebSocketController {
                 data.put("loop", deviceLoop.getLoop());
                 //是否闭合
                 if (msg.getCmdtype() == 1) {
-                    data.put("state", 1);
-                } else {
                     data.put("state", 0);
+                } else {
+                    data.put("state", 1);
                 }
                 simpleProtocolVo.setData(data);
+                simpleProtocolVo.setCmdid(thingsMsgKey.getMsgCode());
                 simpleProtocolVos.add(simpleProtocolVo);
             });
         });

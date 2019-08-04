@@ -2,6 +2,7 @@ package com.shuzhi.websocket.socketvo;
 
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,7 +26,12 @@ public class DevicesMsg {
     /**
      * 设备信息集合
      */
-    private List<Devices> devices;
+    private List<Devices> devices = new ArrayList<>();
 
 
+    public void setData(DevicesMsg devicesMsg1) {
+
+        devices.addAll(devicesMsg1.getDevices());
+
+    }
 }

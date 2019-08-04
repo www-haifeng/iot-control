@@ -21,9 +21,17 @@ import java.io.Serializable;
 public class DeviceStation extends BaseEntity implements Serializable {
     private static final long serialVersionUID = 1L;
 
-
     @Id
+    private Integer id;
+
+    @Column(name = "stationid")
     private Integer stationid;
+
+    /**
+     * 公交站名称
+     */
+    @Column(name = "station_name")
+    private String stationName;
 
     /**
      * 设备类型编码 1.顶棚照明 2.logo照明 3.站台照明 4.led 5.lcd 6.集中控制器
@@ -43,9 +51,9 @@ public class DeviceStation extends BaseEntity implements Serializable {
     @Column(name = "device_name")
     private String deviceName;
 
-    public DeviceStation(String id) {
+    public DeviceStation(String deviceDid) {
 
-        this.deviceDid = id;
+        this.deviceDid = deviceDid;
 
     }
 
@@ -53,4 +61,5 @@ public class DeviceStation extends BaseEntity implements Serializable {
 
 
     }
+
 }

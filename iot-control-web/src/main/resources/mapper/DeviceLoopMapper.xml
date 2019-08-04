@@ -3,14 +3,25 @@
 
 <mapper namespace="com.shuzhi.mapper.DeviceLoopMapper">
 
-	<!-- 可根据自己的需求，是否要使用 -->
+    <!-- 可根据自己的需求，是否要使用 -->
     <resultMap type="com.shuzhi.entity.DeviceLoop" id="deviceLoopMap">
-        <result property="id" column="id" />
-        <result property="typecode" column="typecode" />
-        <result property="deviceDid" column="device_did" />
-        <result property="deviceName" column="device_name" />
-        <result property="loop" column="loop" />
-        <result property="gatewayDid" column="gateway_did" />
+        <result property="id" column="id"/>
+        <result property="typecode" column="typecode"/>
+        <result property="deviceDid" column="device_did"/>
+        <result property="deviceName" column="device_name"/>
+        <result property="loop" column="loop"/>
+        <result property="gatewayDid" column="gateway_did"/>
     </resultMap>
+    <!--查询公交站下所有的设备信息-->
+    <select id="findByStationId" resultType="com.shuzhi.entity.DeviceLoop">
+        select t1.*
+        from t_device_loop t1
+                 left join t_device_station t2 on t1.device_did = t2.device_did
+        where t2.stationid = #{stationId}
+    </select>
+    <select id="findByLamppostId" parameterType="String" resultType="Integer">
+        select lamppostid
+        from t_device_loop where device_did=#{did} and device_name=#{name}
+    </select>
 
 </mapper>
