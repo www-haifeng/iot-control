@@ -672,7 +672,7 @@ public class WebSocketServer {
      */
     @Scheduled(cron = "${send.light-cron}")
     public void light() throws ParseException {
-        Integer modulecode = getModuleCode("light");
+        Integer modulecode = getModuleCode("light-frt");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
@@ -786,7 +786,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.lcd-cron}")
     public void lcd() throws ParseException {
         //查出led的 moduleCode
-        Integer modulecode = getModuleCode("lcd");
+        Integer modulecode = getModuleCode("lcd-frt");
         String code = String.valueOf(modulecode);
         //判断该连接是要被关闭
         if (isOnClose(code)) {
@@ -897,7 +897,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.led-cron}")
     public void led() throws ParseException {
         //查出led的 moduleCode
-        Integer modulecode = getModuleCode("led");
+        Integer modulecode = getModuleCode("led-frt");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
@@ -993,7 +993,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.frt-cron}")
     private void frt() throws ParseException {
         //查出frt的 moduleCode
-        Integer modulecode = getModuleCode("frt");
+        Integer modulecode = getModuleCode("ring-frt");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
@@ -1042,7 +1042,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.spon-cron}")
     private void spon() throws ParseException {
         //查出spon的 moduleCode
-        Integer modulecode = getModuleCode("frt");
+        Integer modulecode = getModuleCode("spon");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
