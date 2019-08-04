@@ -1099,7 +1099,7 @@ public class WebSocketServer {
                             }
                         } catch (Exception e) {
                             //重新推送
-                            if (retry != count) {
+                            if (2 != count) {
                                 send(token, message);
                                 log.info("消息推送失败,重试第 {} 次", count + 1);
                                 count++;

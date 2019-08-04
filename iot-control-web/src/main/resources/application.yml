@@ -58,5 +58,5 @@ send:
   lcd-cron: "*/5 * * * * ?"
   platform-cron: "*/5 * * * * ?"
   frt-cron: "*/500 * * * * ?"
-  lectricity-cron: "*/5 * * * * ?"
+  electricity-cron: "*/5 * * * * ?"
   spon-cron: "*/500 * * * * ?"
