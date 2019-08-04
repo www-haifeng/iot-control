@@ -676,7 +676,7 @@ public class WebSocketServer {
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
-            messageVo.setMsgcode(102001);
+            messageVo.setMsgcode(220001);
             //调用接口 获取当前照明状态
             Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
             loopStatus = loopStatusServiceApi.findLoopStatus();
@@ -716,7 +716,7 @@ public class WebSocketServer {
                 lightMsgState.setPlatfonds(platfonds);
                 lightMsgState.setLogos(logos);
                 messageVo.setMsg(lightMsgState);
-                messageVo.setMsgcode(102002);
+                messageVo.setMsgcode(220002);
                 send(code, JSON.toJSONString(messageVo));
 
                 //推送统计信息
@@ -725,11 +725,11 @@ public class WebSocketServer {
                 List<TEvent> event = loopStatusServiceApi.findEvent();
                 LightMsgVo lightMsgVo = new LightMsgVo(statisticsMsgVo, event);
                 messageVo.setMsg(lightMsgVo);
-                messageVo.setMsgcode(102003);
+                messageVo.setMsgcode(220003);
                 send(code, JSON.toJSONString(messageVo));
 
                 //推送离线设备信息
-                messageVo.setMsgcode(102004);
+                messageVo.setMsgcode(220004);
                 OfflineMsg offlineMsg = new OfflineMsg();
                 offlineMsg.offlineLightMsg(loopStatus);
                 messageVo.setMsg(offlineMsg);
@@ -792,7 +792,7 @@ public class WebSocketServer {
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
             //调用接口 获得所有站屏的设备状态
-            messageVo.setMsgcode(103001);
+            messageVo.setMsgcode(230001);
             Optional.ofNullable(tEventLcdService).orElseGet(() -> tEventLcdService = ApplicationContextUtils.get(TEventLcdService.class));
             Optional.ofNullable(iotLcdStatusService).orElseGet(() -> iotLcdStatusService = ApplicationContextUtils.get(IotLcdsStatusService.class));
             Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
@@ -826,18 +826,18 @@ public class WebSocketServer {
                 allStatusByRedis.forEach(iotLcdStatus -> iotLcdStatus.setVolume(null));
                 LcdMsg lcdMsg2 = new LcdMsg(allStatusByRedis);
                 messageVo.setMsg(lcdMsg2);
-                messageVo.setMsgcode(103002);
+                messageVo.setMsgcode(230002);
                 send(code, JSON.toJSONString(messageVo));
 
                 //推送统计信息
                 LightMsgVo lightMsgVo = new LightMsgVo();
                 lightMsgVo.lightMsgVoLcd(allStatusByRedis, tEventLcdService.findCountByTime());
                 messageVo.setMsg(lightMsgVo);
-                messageVo.setMsgcode(103003);
+                messageVo.setMsgcode(230003);
                 send(code, JSON.toJSONString(messageVo));
 
                 //推送离线设备信息
-                messageVo.setMsgcode(103004);
+                messageVo.setMsgcode(230004);
                 OfflineMsg offlineMsg = new OfflineMsg();
                 offlineMsg.offlineLcdMsg(allStatusByRedis);
                 messageVo.setMsg(offlineMsg);
@@ -901,7 +901,7 @@ public class WebSocketServer {
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
-            messageVo.setMsgcode(103011);
+            messageVo.setMsgcode(230011);
             //调用接口
             Optional.ofNullable(tEventLedService).orElseGet(() -> tEventLedService = ApplicationContextUtils.get(TEventLedService.class));
             Optional.ofNullable(tStatusService).orElseGet(() -> tStatusService = ApplicationContextUtils.get(TStatusService.class));
@@ -948,18 +948,18 @@ public class WebSocketServer {
                 });
                 Leds leds2 = new Leds(allStatus);
                 messageVo.setMsg(leds2);
-                messageVo.setMsgcode(103012);
+                messageVo.setMsgcode(230012);
                 send(code, JSON.toJSONString(messageVo));
 
                 //推送统计信息
                 LightMsgVo lightMsgVo = new LightMsgVo();
                 lightMsgVo.lightMsgVoLed(allStatus, tEventLedService.findCountByTime());
                 messageVo.setMsg(lightMsgVo);
-                messageVo.setMsgcode(103013);
+                messageVo.setMsgcode(230013);
                 send(code, JSON.toJSONString(messageVo));
 
                 //推送离线设备信息
-                messageVo.setMsgcode(103014);
+                messageVo.setMsgcode(230014);
                 OfflineMsg offlineMsg = new OfflineMsg();
                 offlineMsg.offlineLedMsg(allStatus);
                 messageVo.setMsg(offlineMsg);
@@ -997,7 +997,7 @@ public class WebSocketServer {
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
-            messageVo.setMsgcode(104001);
+            messageVo.setMsgcode(240001);
             //调用接口
             Optional.ofNullable(dataClientService).orElseGet(() -> dataClientService = ApplicationContextUtils.get(DataClientService.class));
             Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
@@ -1022,12 +1022,12 @@ public class WebSocketServer {
                 //推送环测统计
                 StatisticalPoleVo number = deviceClientService.number();
                 messageVo.setMsg(number);
-                messageVo.setMsgcode(104002);
+                messageVo.setMsgcode(240002);
                 send(code, JSON.toJSONString(messageVo));
 
                 //离线设备信息
                 List<OfflinesRingVo> offline = deviceClientService.offline();
-                messageVo.setMsgcode(104003);
+                messageVo.setMsgcode(240003);
                 OfflinesRing offlinesRing = new OfflinesRing();
                 offlinesRing.setOfflines(offline);
                 messageVo.setMsg(offlinesRing);
