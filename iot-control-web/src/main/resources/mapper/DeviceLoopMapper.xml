@@ -23,5 +23,19 @@
         select lamppostid
         from t_device_loop where device_did=#{did} and device_name=#{name}
     </select>
-
+    <select id="findsByLamppostId" parameterType="com.shuzhi.light.entities.TLoopStateDto" resultType="integer">
+        select lamppostid from t_device_loop
+        <where>
+        <if test="gatewayId != null">
+            gateway_did=#{gatewayId}
+        </if>
+        <if test="loop != null">
+            and loop=#{loop}
+        </if>
+    </where>
+    </select>
+    <select id="findByLamppostIds" parameterType="integer" resultType="integer">
+        select lamppostid
+        from t_device_loop where lamppostid =#{strings}
+    </select>
 </mapper>

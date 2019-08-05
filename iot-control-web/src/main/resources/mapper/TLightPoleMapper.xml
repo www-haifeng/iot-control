@@ -22,6 +22,11 @@
         <foreach collection="strings" item="item" open="(" separator="," close=")">
             #{item}
         </foreach>
-
+    </select>
+    <select id="findByTlightPoles" resultMap="tLightPoleMap">
+        select
+        <include refid="Base_Column_List" />
+        from t_light_pole
+        where lamppostid=#{strings}
     </select>
 </mapper>

@@ -1,6 +1,7 @@
 package com.shuzhi.mapper;
 
 import com.shuzhi.entity.DeviceLoop;
+import com.shuzhi.light.entities.TLoopStateDto;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 import com.shuzhi.common.basemapper.MyBaseMapper;
@@ -26,4 +27,8 @@ public interface DeviceLoopMapper extends MyBaseMapper<DeviceLoop> {
     List<DeviceLoop> findByStationId(@Param("stationId") Integer stationId);
 
     List<Integer> findByLamppostId(@Param("did") String did,@Param("name") String name);
+
+    Integer findsByLamppostId(TLoopStateDto tLoopStateDto1);
+
+    List<Integer> findByLamppostIds(Integer strings);
 }

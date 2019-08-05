@@ -5,16 +5,16 @@ import lombok.Data;
 import java.util.List;
 
 /**
- * @author zgk
+ * @author hulinag
  * @description 照明首次连接数据
  * @date 2019-07-15 16:30
  */
 @Data
 public class LightMsg {
 
-    private List<Lights> lights;
+    private List<Loops> loops;
 
-    public LightMsg(List<Lights> lights) {
-        this.lights = lights;
+    public LightMsg(List<Loops> loops) {
+        this.loops = loops;
     }
 }

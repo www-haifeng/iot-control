@@ -679,42 +679,60 @@ public class WebSocketServer {
             messageVo.setMsgcode(220001);
             //调用接口 获取当前照明状态
             Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
+            Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
+            Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
             loopStatus = loopStatusServiceApi.findLoopStatus();
-            List<Lights> lightsList = new ArrayList<>();
             //保存设备状态信息
             LightMsgState lightMsgState = new LightMsgState();
+            List<Loops> loops = new ArrayList<>();
+            List<Integer> count = new ArrayList<>();
             if (loopStatus != null && loopStatus.size() != 0) {
-                //灯箱设备
-                List<Lights> lamphouses = new ArrayList<>();
-                //顶棚
-                List<Lights> platfonds = new ArrayList<>();
-                //log
-                List<Lights> logos = new ArrayList<>();
+                //所有单灯信息
                 loopStatus.forEach(tLoopStateDto -> {
-                    //判断这个回路下是什么设备
-                    DeviceLoop deviceLoop = tLoopStateDtoIsNull(tLoopStateDto);
-                    if (deviceLoop != null) {
-                        Lights light = new Lights(deviceLoop, tLoopStateDto);
-                        lightsList.add(light);
-                        //判断这是什么设备
-                        if (light.getLamphouseid() != null) {
-                            lamphouses.add(light);
+                    Lights lights = new Lights();
+                    Loops loops1 = new Loops();
+
+                    //根据灯杆id查询
+                    TLoopStateDto tLoopStateDto1 = new TLoopStateDto();
+                    tLoopStateDto1.setGatewayId(tLoopStateDto.getGatewayId());
+                    tLoopStateDto1.setLoop(tLoopStateDto.getLoop());
+                    //根据设备did查找灯杆id
+                    Integer strings = deviceLoopMapper.findsByLamppostId(tLoopStateDto1);
+                    if(!count.contains(strings)){
+                        List<Lights> light = new ArrayList<>();
+                        loops1.setLoopid(tLoopStateDto.getId());
+                        loops1.setLoopnum(tLoopStateDto.getLoop());
+                        loops1.setLoopname(tLoopStateDto.getName());
+                        loops1.setOnoff(tLoopStateDto.getState());
+                        loops1.setState(tLoopStateDto.getState());
+                        loops1.setLights(light);
+                        count.add(strings);
+                        DeviceLoop deviceLoop = new DeviceLoop();
+                        deviceLoop.setLamppostid(strings);
+                        List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
+                        for (DeviceLoop loop : deviceLoops) {
+                            //在根据灯杆id查询所有灯杆信息
+                            TLightPole lists = tLightPoleMapper.findByTlightPoles(loop.getLamppostid());
+                            lights.setLamppostid(lists.getLamppostid());
+                            lights.setLamppostname(lists.getLamppostname());
+                            deviceLoop.setLamppostid(null);
+                            deviceLoop.setLoop(tLoopStateDto.getLoop());
+                            deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
+                            DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
+                            lights.setName(deviceLoop1.getDeviceName());
+                            lights.setState(tLoopStateDto.getState());
+                            lights.setOnoff(tLoopStateDto.getState());
+                            light.add(lights);
                         }
-                        if (light.getPlatfondid() != null) {
-                            platfonds.add(light);
-                        }
-                        if (light.getLogoid() != null) {
-                            logos.add(light);
-                        }
+                        loops1.setLights(light);
+                        loops.add(loops1);
                     }
                 });
-                LightMsg lightMsg = new LightMsg(lightsList);
+                LightMsg lightMsg = new LightMsg(loops);
                 messageVo.setMsg(lightMsg);
                 send(code, JSON.toJSONString(messageVo));
+
                 //推送设备状态信息
-                lightMsgState.setLamphouses(lamphouses);
-                lightMsgState.setPlatfonds(platfonds);
-                lightMsgState.setLogos(logos);
                 messageVo.setMsg(lightMsgState);
                 messageVo.setMsgcode(220002);
                 send(code, JSON.toJSONString(messageVo));
@@ -1039,7 +1057,7 @@ public class WebSocketServer {
     /**
      * spon广播首次建连
      */
-    @Scheduled(cron = "${send.spon-cron}")
+    //@Scheduled(cron = "${send.spon-cron}")
     private void spon() throws ParseException {
         //查出spon的 moduleCode
         Integer modulecode = getModuleCode("spon");

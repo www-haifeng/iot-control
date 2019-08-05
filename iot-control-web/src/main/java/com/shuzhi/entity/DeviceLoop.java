@@ -56,6 +56,10 @@ public class DeviceLoop extends BaseEntity implements Serializable{
     @Column(name = "gateway_did")
     private String gatewayDid;
 
+    @Column(name = "lamppostid")
+    private Integer lamppostid;
+
+
     public DeviceLoop(TLoopStateDto loopStateDto) {
         this.loop = loopStateDto.getLoop();
         this.gatewayDid = loopStateDto.getGatewayId();
