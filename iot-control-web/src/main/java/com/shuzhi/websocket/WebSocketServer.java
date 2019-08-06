@@ -802,6 +802,8 @@ public class WebSocketServer {
                 messageVo.setMsg(offlineMsg);
                 send(code,objectMapper.writeValueAsString(messageVo));
 
+                //所有集中控制器信息
+
                 log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
             }
         }
