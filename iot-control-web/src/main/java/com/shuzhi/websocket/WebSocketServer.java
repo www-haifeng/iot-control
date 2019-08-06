@@ -17,6 +17,7 @@ import com.shuzhi.lcd.service.TEventLcdService;
 import com.shuzhi.led.entities.TStatusDto;
 import com.shuzhi.led.service.TEventLedService;
 import com.shuzhi.led.service.TStatusService;
+import com.shuzhi.light.entities.GatewayRedis;
 import com.shuzhi.light.entities.StatisticsVo;
 import com.shuzhi.light.entities.TLoopStateDto;
 import com.shuzhi.light.service.LoopStatusServiceApi;
@@ -803,6 +804,51 @@ public class WebSocketServer {
                 send(code,objectMapper.writeValueAsString(messageVo));
 
                 //所有集中控制器信息
+                List<Integer> count2 = new ArrayList<>();
+                List<Controllers> controllersList = new ArrayList<>();
+                loopStatus.forEach(tLoopStateDto -> {
+                    DeviceLoop deviceLoop = new DeviceLoop();
+                    deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
+                    deviceLoop.setTypecode("7");
+                    List<DeviceLoop> select = deviceLoopMapper.select(deviceLoop);
+                    Set<DeviceLoop> deviceLoops = new HashSet<>(select);
+                    for (DeviceLoop loop : deviceLoops) {
+                        List<Loops> loops1 = new ArrayList<>();
+                        Controllers controllers = new Controllers();
+                        controllers.setControllerid(loop.getGatewayDid());
+                        controllers.setControllername(loop.getDeviceName());
+                        controllers.setControllernum(loop.getGatewayDid());
+                        List<GatewayRedis> gatewayRedis = loopStatusServiceApi.findgatewayState();
+                        for (GatewayRedis gatewayRedi : gatewayRedis) {
+                            if (loop.getGatewayDid().equals(gatewayRedi.getGatewayId())){
+                                controllers.setState(gatewayRedi.getOnoff());
+                            } else {
+                                controllers.setState(0);
+                            }
+                        }
+                        //根据灯杆id查询
+                        TLoopStateDto tLoopStateDto2 = new TLoopStateDto();
+                        tLoopStateDto2.setGatewayId(tLoopStateDto.getGatewayId());
+                        tLoopStateDto2.setLoop(tLoopStateDto.getLoop());
+                        //根据设备did查找灯杆id
+                        Integer strings2 = deviceLoopMapper.findsByLamppostId(tLoopStateDto2);
+                        if(!count2.contains(strings2)) {
+                            count2.add(strings2);
+                            Loops loops2 = new Loops();
+                            loops2.setLoopid(tLoopStateDto.getId());
+                            loops2.setLoopnum(tLoopStateDto.getLoop());
+                            loops2.setLoopname(tLoopStateDto.getName());
+                            loops2.setOnoff(tLoopStateDto.getState());
+                            loops1.add(loops2);
+                        }
+                        controllers.setLoopsList(loops1);
+                        controllersList.add(controllers);
+                    }
+
+                });
+                messageVo.setMsgcode(220005);
+                messageVo.setMsg(controllersList);
+                send(code,objectMapper.writeValueAsString(messageVo));
 
                 log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
             }

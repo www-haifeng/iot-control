@@ -59,7 +59,7 @@ public class LightMsgVo {
         AtomicInteger order = new AtomicInteger(1);
         if (event != null){
             event.forEach(tEvent -> {
-                Lightalarms lightalarm = new Lightalarms(tEvent.getCount(), tEvent.getCreatetime(), order.get());
+                Lightalarms lightalarm = new Lightalarms(tEvent.getCount(), tEvent.getCreateTime(), order.get());
                 lightalarms.add(lightalarm);
                 order.getAndIncrement();
             });

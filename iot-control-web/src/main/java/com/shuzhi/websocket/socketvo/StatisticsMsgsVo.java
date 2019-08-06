@@ -52,7 +52,7 @@ public class StatisticsMsgsVo {
         this.offnum = Math.toIntExact(tLoopStateDtos.stream().filter(tStatusDto -> tStatusDto.getState() == 0).count());
         this.errornum = Math.toIntExact(tLoopStateDtos.stream().filter(tStatusDto -> tStatusDto.getState() == 0).count());
         ;
-        this.onlinerate = String.valueOf(onnum/total*100).split("\\.")[0]+"%";
-        this.lightrate = String.valueOf((total-errornum)/total*100).split("\\.")[0]+"%";
+        this.onlinerate = String.valueOf(onnum/total*100).split("\\.")[0];
+        this.lightrate = String.valueOf((total-errornum)/total*100).split("\\.")[0];
     }
 }
