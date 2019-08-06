@@ -1,8 +1,7 @@
 package com.shuzhi.mapper;
 
-import com.shuzhi.common.basemapper.MyBaseMapper;
-import com.shuzhi.entity.Station;
-import com.shuzhi.websocket.socketvo.Groups;
+import com.shuzhi.entity.Group;
+import org.apache.ibatis.annotations.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -11,6 +10,6 @@ import org.springframework.stereotype.Repository;
  */
 
 @Repository
-public interface TFrtMapper extends MyBaseMapper<Station> {
-    Groups findById(Integer frtid);
+public interface TFrtMapper {
+    Group findById(@Param("frtid") Integer frtid);
 }

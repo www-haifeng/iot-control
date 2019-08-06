@@ -2,6 +2,7 @@ package com.shuzhi.websocket;
 
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shuzhi.entity.*;
@@ -56,7 +57,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @ServerEndpoint("/websocket")
 @Component
 public class WebSocketServer {
-
+    ObjectMapper objectMapper = new ObjectMapper();
     private static StringRedisTemplate redisTemplate;
 
     private MqMessageService mqMessageService;
@@ -685,15 +686,14 @@ public class WebSocketServer {
             Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
             Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
             Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
+            Optional.ofNullable(tFrtMapper).orElseGet(() -> tFrtMapper = ApplicationContextUtils.get(TFrtMapper.class));
             loopStatus = loopStatusServiceApi.findLoopStatus();
             List<Loops> loops = new ArrayList<>();
             List<Integer> count = new ArrayList<>();
             if (loopStatus != null && loopStatus.size() != 0) {
                 //所有单灯信息
                 loopStatus.forEach(tLoopStateDto -> {
-                    Lights lights = new Lights();
                     Loops loops1 = new Loops();
-
                     //根据灯杆id查询
                     TLoopStateDto tLoopStateDto1 = new TLoopStateDto();
                     tLoopStateDto1.setGatewayId(tLoopStateDto.getGatewayId());
@@ -713,13 +713,14 @@ public class WebSocketServer {
                         deviceLoop.setLamppostid(strings);
                         List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
                         for (DeviceLoop loop : deviceLoops) {
+                            Lights lights = new Lights();
                             //在根据灯杆id查询所有灯杆信息
                             TLightPole lists = tLightPoleMapper.findByTlightPoles(loop.getLamppostid());
                             lights.setLamppostid(lists.getLamppostid());
                             lights.setLamppostname(lists.getLamppostname());
                             deviceLoop.setLamppostid(null);
-                            deviceLoop.setLoop(tLoopStateDto.getLoop());
-                            deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
+                            deviceLoop.setLoop(loop.getLoop());
+                            deviceLoop.setGatewayDid(loop.getGatewayDid());
                             DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
                             lights.setName(deviceLoop1.getDeviceName());
                             lights.setState(tLoopStateDto.getState());
@@ -732,17 +733,16 @@ public class WebSocketServer {
                 });
                 LightMsg lightMsg = new LightMsg(loops);
                 messageVo.setMsg(lightMsg);
-                ObjectMapper objectMapper = new ObjectMapper();
-               // send(code, JSON.toJSONString(messageVo));
+                send(code, JSON.toJSONString(messageVo, SerializerFeature.DisableCircularReferenceDetect));
                 //所有单灯信息（回路）
-                send(code,objectMapper.writeValueAsString(messageVo));
+               // send(code,objectMapper.writeValueAsString(messageVo));
 
                 //所有单灯信息（分组）
                 List<Groups> groups = new ArrayList<>();
                 List<Integer> count1 = new ArrayList<>();
                 if (loopStatus != null && loopStatus.size() != 0) {
                     loopStatus.forEach(tLoopStateDto -> {
-                        Lights lights = new Lights();
+
                         Groups groups1 = new Groups();
                         //根据灯杆id查询
                         TLoopStateDto tLoopStateDto1 = new TLoopStateDto();
@@ -751,33 +751,34 @@ public class WebSocketServer {
                         //根据设备did查找灯杆id
                         Integer strings = deviceLoopMapper.findsByLamppostId(tLoopStateDto1);
                         if(!count1.contains(strings)){
-                            List<Lights> light = new ArrayList<>();
+                            List<Lights> light1 = new ArrayList<>();
                             //根据灯杆id查询
                             TLightPole lists = tLightPoleMapper.findByTlightPoles(strings);
                             //根据灯杆中的frtid查询
-                            Groups groups2 = tFrtMapper.findById(lists.getFrtid());
-                            groups1.setGroupid(groups2.getGroupid());
-                            groups1.setGroupname(groups2.getGroupname());
-                            count.add(strings);
+                            Group groups2 = tFrtMapper.findById(lists.getFrtid());
+                            groups1.setGroupid(groups2.getId());
+                            groups1.setGroupname(groups2.getFrtName());
+                            count1.add(strings);
 
                             DeviceLoop deviceLoop = new DeviceLoop();
                             deviceLoop.setLamppostid(strings);
                             List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
                             for (DeviceLoop loop : deviceLoops) {
+                                Lights lights1 = new Lights();
                                 //在根据灯杆id查询所有灯杆信息
                                 TLightPole lists2 = tLightPoleMapper.findByTlightPoles(loop.getLamppostid());
-                                lights.setLamppostid(lists2.getLamppostid());
-                                lights.setLamppostname(lists2.getLamppostname());
+                                lights1.setLamppostid(lists2.getLamppostid());
+                                lights1.setLamppostname(lists2.getLamppostname());
                                 deviceLoop.setLamppostid(null);
                                 deviceLoop.setLoop(tLoopStateDto.getLoop());
                                 deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
                                 DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
-                                lights.setName(deviceLoop1.getDeviceName());
-                                lights.setState(tLoopStateDto.getState());
-                                lights.setOnoff(tLoopStateDto.getState());
-                                light.add(lights);
+                                lights1.setName(deviceLoop1.getDeviceName());
+                                lights1.setState(tLoopStateDto.getState());
+                                lights1.setOnoff(tLoopStateDto.getState());
+                                light1.add(lights1);
                             }
-                            groups1.setLights(light);
+                            groups1.setLights(light1);
                             groups.add(groups1);
                         }
                     });

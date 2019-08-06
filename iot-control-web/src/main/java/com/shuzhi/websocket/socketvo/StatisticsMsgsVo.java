@@ -28,22 +28,22 @@ public class StatisticsMsgsVo {
     /**
      * 总数
      */
-    private Integer total = 0;
+    private double total = 0;
 
     /**
      * 亮灯数
      */
-    private Integer onnum = 0;
+    private double onnum = 0;
 
     /**
      * 熄灯数
      */
-    private Integer offnum = 0;
+    private double offnum = 0;
 
     /**
      * 故障数
      */
-    private Integer errornum = 0;
+    private double errornum = 0;
 
     public void addLightNum(List<TLoopStateDto> tLoopStateDtos) {
 
