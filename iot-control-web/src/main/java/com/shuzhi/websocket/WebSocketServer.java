@@ -2,6 +2,8 @@ package com.shuzhi.websocket;
 
 
 import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shuzhi.entity.*;
 import com.shuzhi.frt.entities.OfflinesRingVo;
 import com.shuzhi.frt.entities.StatisticalPoleVo;
@@ -15,11 +17,11 @@ import com.shuzhi.led.entities.TStatusDto;
 import com.shuzhi.led.service.TEventLedService;
 import com.shuzhi.led.service.TStatusService;
 import com.shuzhi.light.entities.StatisticsVo;
-import com.shuzhi.light.entities.TEvent;
 import com.shuzhi.light.entities.TLoopStateDto;
 import com.shuzhi.light.service.LoopStatusServiceApi;
 import com.shuzhi.mapper.DeviceLoopMapper;
 import com.shuzhi.mapper.StationMapper;
+import com.shuzhi.mapper.TFrtMapper;
 import com.shuzhi.mapper.TLightPoleMapper;
 import com.shuzhi.rabbitmq.Message;
 import com.shuzhi.service.DeviceLoopService;
@@ -80,6 +82,8 @@ public class WebSocketServer {
     private TEventLcdService tEventLcdService;
 
     private StationMapper stationMapper;
+
+    private TFrtMapper tFrtMapper;
 
     private static Map<String, CopyOnWriteArrayList<Session>> SESSION_MAP = new ConcurrentHashMap<>();
     private static Hashtable<String, Integer> sessionCodeMap = new Hashtable<>();
@@ -186,7 +190,7 @@ public class WebSocketServer {
      *
      * @param message 消息
      */
-    private void restHandle(Message message) throws ParseException {
+    private void restHandle(Message message) throws ParseException, JsonProcessingException {
 
         Integer modulecode = message.getModulecode();
         //判断消息编码
@@ -209,7 +213,7 @@ public class WebSocketServer {
      *
      * @param message 前端协议
      */
-    private void assemble(Message message) throws ParseException {
+    private void assemble(Message message) throws ParseException, JsonProcessingException {
         //判断是什么设备
         Optional.ofNullable(mqMessageService).orElseGet(() -> mqMessageService = ApplicationContextUtils.get(MqMessageService.class));
         MqMessage mqMessageSelect = new MqMessage();
@@ -671,7 +675,7 @@ public class WebSocketServer {
      * 照明首次连接 同时也定时推送
      */
     @Scheduled(cron = "${send.light-cron}")
-    public void light() throws ParseException {
+    public void light() throws ParseException, JsonProcessingException {
         Integer modulecode = getModuleCode("light-frt");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
@@ -682,8 +686,6 @@ public class WebSocketServer {
             Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
             Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
             loopStatus = loopStatusServiceApi.findLoopStatus();
-            //保存设备状态信息
-            LightMsgState lightMsgState = new LightMsgState();
             List<Loops> loops = new ArrayList<>();
             List<Integer> count = new ArrayList<>();
             if (loopStatus != null && loopStatus.size() != 0) {
@@ -730,28 +732,74 @@ public class WebSocketServer {
                 });
                 LightMsg lightMsg = new LightMsg(loops);
                 messageVo.setMsg(lightMsg);
-                send(code, JSON.toJSONString(messageVo));
+                ObjectMapper objectMapper = new ObjectMapper();
+               // send(code, JSON.toJSONString(messageVo));
+                //所有单灯信息（回路）
+                send(code,objectMapper.writeValueAsString(messageVo));
 
-                //推送设备状态信息
-                messageVo.setMsg(lightMsgState);
+                //所有单灯信息（分组）
+                List<Groups> groups = new ArrayList<>();
+                List<Integer> count1 = new ArrayList<>();
+                if (loopStatus != null && loopStatus.size() != 0) {
+                    loopStatus.forEach(tLoopStateDto -> {
+                        Lights lights = new Lights();
+                        Groups groups1 = new Groups();
+                        //根据灯杆id查询
+                        TLoopStateDto tLoopStateDto1 = new TLoopStateDto();
+                        tLoopStateDto1.setGatewayId(tLoopStateDto.getGatewayId());
+                        tLoopStateDto1.setLoop(tLoopStateDto.getLoop());
+                        //根据设备did查找灯杆id
+                        Integer strings = deviceLoopMapper.findsByLamppostId(tLoopStateDto1);
+                        if(!count1.contains(strings)){
+                            List<Lights> light = new ArrayList<>();
+                            //根据灯杆id查询
+                            TLightPole lists = tLightPoleMapper.findByTlightPoles(strings);
+                            //根据灯杆中的frtid查询
+                            Groups groups2 = tFrtMapper.findById(lists.getFrtid());
+                            groups1.setGroupid(groups2.getGroupid());
+                            groups1.setGroupname(groups2.getGroupname());
+                            count.add(strings);
+
+                            DeviceLoop deviceLoop = new DeviceLoop();
+                            deviceLoop.setLamppostid(strings);
+                            List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
+                            for (DeviceLoop loop : deviceLoops) {
+                                //在根据灯杆id查询所有灯杆信息
+                                TLightPole lists2 = tLightPoleMapper.findByTlightPoles(loop.getLamppostid());
+                                lights.setLamppostid(lists2.getLamppostid());
+                                lights.setLamppostname(lists2.getLamppostname());
+                                deviceLoop.setLamppostid(null);
+                                deviceLoop.setLoop(tLoopStateDto.getLoop());
+                                deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
+                                DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
+                                lights.setName(deviceLoop1.getDeviceName());
+                                lights.setState(tLoopStateDto.getState());
+                                lights.setOnoff(tLoopStateDto.getState());
+                                light.add(lights);
+                            }
+                            groups1.setLights(light);
+                            groups.add(groups1);
+                        }
+                    });
+                }
+                LightsMsg lightsMsg = new LightsMsg(groups);
+                messageVo.setMsg(lightsMsg);
                 messageVo.setMsgcode(220002);
-                send(code, JSON.toJSONString(messageVo));
+                send(code,objectMapper.writeValueAsString(messageVo));
 
                 //推送统计信息
-                StatisticsMsgVo statisticsMsgVo = lightStatis(loopStatus);
-                statisticsMsgVo.addLightNum(loopStatus);
-                List<TEvent> event = loopStatusServiceApi.findEvent();
-                LightMsgVo lightMsgVo = new LightMsgVo(statisticsMsgVo, event);
-                messageVo.setMsg(lightMsgVo);
+                StatisticsMsgsVo statisticsMsgsVo = new StatisticsMsgsVo();
+                statisticsMsgsVo.addLightNum(loopStatus);
+                messageVo.setMsg(statisticsMsgsVo);
                 messageVo.setMsgcode(220003);
-                send(code, JSON.toJSONString(messageVo));
+                send(code,objectMapper.writeValueAsString(messageVo));
 
                 //推送离线设备信息
                 messageVo.setMsgcode(220004);
                 OfflineMsg offlineMsg = new OfflineMsg();
                 offlineMsg.offlineLightMsg(loopStatus);
                 messageVo.setMsg(offlineMsg);
-                send(code, JSON.toJSONString(messageVo));
+                send(code,objectMapper.writeValueAsString(messageVo));
 
                 log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
             }

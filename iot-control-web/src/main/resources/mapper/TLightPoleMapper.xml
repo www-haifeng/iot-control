@@ -10,9 +10,10 @@
         <result property="lamppostname" column="lamppostname"/>
         <result property="longitude" column="longitude"/>
         <result property="latitude" column="latitude"/>
+        <result property="frtid" column="frtid"/>
     </resultMap>
     <sql id="Base_Column_List" >
-        id,lamppostid,lamppostname,longitude,latitude
+        id,lamppostid,lamppostname,longitude,latitude,frtid
     </sql>
     <select id="findByTlightPole" resultMap="tLightPoleMap">
         select

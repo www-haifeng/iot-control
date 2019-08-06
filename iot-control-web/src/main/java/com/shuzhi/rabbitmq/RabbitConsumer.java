@@ -1,6 +1,7 @@
 package com.shuzhi.rabbitmq;
 
 import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.rabbitmq.client.Channel;
 import com.shuzhi.entity.MqMessage;
 import com.shuzhi.service.MqMessageService;
@@ -86,7 +87,7 @@ public class RabbitConsumer {
      *
      * @param key modulecode
      */
-    private void isEquip(String key) throws ParseException {
+    private void isEquip(String key) throws ParseException, JsonProcessingException {
 
         MqMessage mqMessageSelect = new MqMessage();
         mqMessageSelect.setModulecode(Integer.valueOf(key));

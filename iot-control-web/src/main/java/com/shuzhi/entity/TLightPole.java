@@ -4,9 +4,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
-import javax.persistence.Column;
-import javax.persistence.Id;
-
 /**
  * @author huliang
  * @date 2019/7/31 15:56
@@ -18,12 +15,10 @@ public class TLightPole {
     /**
      * 灯杆主键id
      */
-    @Id
     private Integer id;
     /**
      * 灯杆id
      */
-    @Column(name = "role_name")
     private Integer lamppostid;
     /**
      * 灯杆名称
@@ -37,4 +32,6 @@ public class TLightPole {
      * 纬度
      */
     private Float latitude;
+
+    private Integer frtid;
 }
