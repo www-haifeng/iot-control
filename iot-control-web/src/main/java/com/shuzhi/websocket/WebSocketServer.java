@@ -770,8 +770,8 @@ public class WebSocketServer {
                                 lights1.setLamppostid(lists2.getLamppostid());
                                 lights1.setLamppostname(lists2.getLamppostname());
                                 deviceLoop.setLamppostid(null);
-                                deviceLoop.setLoop(tLoopStateDto.getLoop());
-                                deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
+                                deviceLoop.setLoop(loop.getLoop());
+                                deviceLoop.setGatewayDid(loop.getGatewayDid());
                                 DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
                                 lights1.setName(deviceLoop1.getDeviceName());
                                 lights1.setState(tLoopStateDto.getState());
