@@ -711,7 +711,7 @@ public class WebSocketServer {
                         loops1.setLights(light);
                         count.add(strings);
                         DeviceLoop deviceLoop = new DeviceLoop();
-                        deviceLoop.setLamppostid(strings);
+                        deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
                         List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
                         for (DeviceLoop loop : deviceLoops) {
                             Lights lights = new Lights();
@@ -762,7 +762,7 @@ public class WebSocketServer {
                             count1.add(strings);
 
                             DeviceLoop deviceLoop = new DeviceLoop();
-                            deviceLoop.setLamppostid(strings);
+                            deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
                             List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
                             for (DeviceLoop loop : deviceLoops) {
                                 Lights lights1 = new Lights();
