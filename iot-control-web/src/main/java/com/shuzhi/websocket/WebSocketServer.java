@@ -726,6 +726,7 @@ public class WebSocketServer {
                             lights.setName(deviceLoop1.getDeviceName());
                             lights.setState(tLoopStateDto.getState());
                             lights.setOnoff(tLoopStateDto.getState());
+                            lights.setId(deviceLoop1.getId());
                             light.add(lights);
                         }
                         loops1.setLights(light);
@@ -777,6 +778,7 @@ public class WebSocketServer {
                                 lights1.setName(deviceLoop1.getDeviceName());
                                 lights1.setState(tLoopStateDto.getState());
                                 lights1.setOnoff(tLoopStateDto.getState());
+                                lights1.setId(deviceLoop1.getId());
                                 light1.add(lights1);
                             }
                             groups1.setLights(light1);
