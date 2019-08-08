@@ -18,5 +18,5 @@ public class Groups {
      * 分组名称名称
      */
     private String groupname;
-    List<Lights> lights;
+    List<Lampposts> lampposts;
 }

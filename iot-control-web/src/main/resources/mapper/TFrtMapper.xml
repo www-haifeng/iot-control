@@ -11,5 +11,7 @@
     <select id="findById" resultMap="frtMap" parameterType="Integer">
         select * from t_frt where id=#{frtid}
     </select>
-
+    <select id="findAll" resultMap="frtMap">
+        select * from t_frt
+    </select>
 </mapper>

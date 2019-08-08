@@ -15,6 +15,6 @@ public class Loops {
     private String loopname;
     private Integer state;
     private Integer onoff;
-    List<Lights> lights;
+    List<Lampposts> lampposts;
 
 }

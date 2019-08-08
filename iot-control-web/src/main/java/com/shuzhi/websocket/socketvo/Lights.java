@@ -10,8 +10,6 @@ import lombok.Data;
 @Data
 public class Lights {
 
-   private Integer lamppostid;
-   private String lamppostname;
    private Integer id;
    private String name;
    private Integer state;

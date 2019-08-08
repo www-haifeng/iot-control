@@ -78,13 +78,105 @@ public class WebSocketController {
         lcdEquip(simpleProtocolVos, msg);
         //led设备
         ledEquip(simpleProtocolVos, msg);
+        //智联照明
+        frtLight(simpleProtocolVos, msg,messageVo.getMsgcode());
         //照明设备 照明设备没有重启操作和音量调节
         if (msg.getCmdtype() != 10007) {
             light(simpleProtocolVos, msg);
         }
+
         return simpleProtocolVos;
     }
+    /**
+     * 智联照明
+     */
+    private void frtLight(List<SimpleProtocolVo> simpleProtocolVos, Msg msg,Integer msgcode) {
+        Optional.ofNullable(msg.getLoops()).ifPresent(strings -> {
+            log.info("接收到照明回路控制的命令 {} , {}", msg, new Date());
+            DeviceLoop deviceLoopSelect = new DeviceLoop();
+            strings.forEach(s -> {
+                SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
+                //通过设备id查出回路和网关id
+                deviceLoopSelect.setDeviceDid(s);
+                deviceLoopSelect.setTypecode(String.valueOf(msg.getLighttype()));
+                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
+                //网关id
+                simpleProtocolVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
+                HashMap<String, Object> data = new HashMap<>(3);
+                //msgId
+                simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
+                //判断msgcode掉那个设备接口
+                if (msgcode == 220006){
+                    //回路控制器
+                    //回路数组
+                    data.put("loops", msg.getLoops());
+                    //命令类型：1-闭合；0-断开；2-读取回路
+                    data.put("cmdtype", msg.getCmdtype());
+                }
+                if (msgcode == 220007) {
+                    //集中控制器
+                    //回路数组
+                    data.put("loops", msg.getLoops());
+                    //命令类型：1-闭合；0-断开；2-读取回路
+                    data.put("cmdtype", msg.getCmdtype());
+                    //调光值
+                    data.put("lightvalue",msg.getLight());
+                    data.put("controllerid",msg.getControllerid());
+                }
+                if (msgcode == 220008) {
+                    //点选集中控制器
+                    //回路数组
+                    data.put("loops", msg.getLoops());
+                    //命令类型：1-闭合；0-断开；2-读取回路
+                    data.put("cmdtype", msg.getCmdtype());
+                    //调光值
+                    data.put("lightvalue",msg.getLight());
+                    data.put("controllerid",msg.getControllerid());
+                }
+                simpleProtocolVo.setData(data);
+                simpleProtocolVo.setCmdid(String.valueOf(msgcode));
+                simpleProtocolVos.add(simpleProtocolVo);
+            });
+        });
+        Optional.ofNullable(msg.getLights()).ifPresent(strings ->  {
+            log.info("接收到照明单灯控制的命令 {} , {}", msg, new Date());
+            DeviceLoop deviceLoopSelect = new DeviceLoop();
+            strings.forEach(s -> {
+                SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
+                //通过设备id查出回路和网关id
+                deviceLoopSelect.setDeviceDid(s);
+                deviceLoopSelect.setTypecode(String.valueOf(msg.getLighttype()));
+                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
+                //网关id
+                simpleProtocolVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
+                HashMap<String, Object> data = new HashMap<>(3);
+                //msgId
+                simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
+                //判断msgcode掉那个设备接口
+                if (msgcode == 220009){
+                    //单灯控制
+                    data.put("lights", msg.getLoops());
+                    //命令类型：1-开；0-关；3-调光
+                    data.put("cmdtype", msg.getCmdtype());
+                    //调光值
+                    data.put("lightvalue",msg.getLight());
+                }
+                if (msgcode == 220010) {
+                    //点选灯杆
+                    data.put("lights", msg.getLoops());
+                    //命令类型：1-开；0-关；3-调光
+                    data.put("cmdtype", msg.getCmdtype());
+                    //调光值
+                    data.put("lightvalue",msg.getLight());
+                }
+                simpleProtocolVo.setData(data);
+                simpleProtocolVo.setCmdid(String.valueOf(msgcode));
+                simpleProtocolVos.add(simpleProtocolVo);
+            });
+        });
 
+
+    }
 
     /**
      * 照明设备封装简易协议 提取重复代码

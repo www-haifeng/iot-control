@@ -43,7 +43,7 @@ public class Msg {
     private List<String> leds;
 
     /**
-     * led数组 屏id
+     * led数组 屏id (单灯控制、点选灯杆)
      */
     private List<String> lights;
 
@@ -51,6 +51,23 @@ public class Msg {
      * 照明类型：1-灯箱；2-顶棚；3-logo
      */
     private Integer lighttype;
+
+    /**
+     * 回路控制 （集中控制器）
+     * @param lighttype
+     */
+    private List<String> loops;
+
+    /**
+     * 消息编码
+     */
+    private Integer msgcode;
+
+    /**
+     * 集中控制器id
+     * @param lighttype
+     */
+    private Integer controllerid;
 
     public void setLighttype(Integer lighttype) {
 

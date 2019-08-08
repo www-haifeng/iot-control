@@ -30,4 +30,7 @@
         from t_light_pole
         where lamppostid=#{strings}
     </select>
+    <select id="findByFrtId" resultMap="tLightPoleMap" parameterType="integer">
+        select * from t_light_pole where frtid=#{id}
+    </select>
 </mapper>

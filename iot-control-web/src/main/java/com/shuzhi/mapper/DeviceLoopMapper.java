@@ -26,9 +26,11 @@ public interface DeviceLoopMapper extends MyBaseMapper<DeviceLoop> {
      */
     List<DeviceLoop> findByStationId(@Param("stationId") Integer stationId);
 
-    List<Integer> findByLamppostId(@Param("did") String did,@Param("name") String name);
+    List<Integer> findByLamppostId(@Param("did") String did);
 
     Integer findsByLamppostId(TLoopStateDto tLoopStateDto1);
 
     List<Integer> findByLamppostIds(Integer strings);
+
+    Integer findLamppostId(DeviceLoop deviceLoop);
 }
