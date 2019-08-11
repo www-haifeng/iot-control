@@ -14,7 +14,7 @@ spring:
    datasource:
     type: com.alibaba.druid.pool.DruidDataSource            # 当前数据源操作类型
     driver-class-name: org.postgresql.Driver              # mysql驱动包
-    url: jdbc:postgresql://192.168.7.68:5432/bus-station-web?currentSchema=public&autoReconnect=true              # 数据库名称
+    url: jdbc:postgresql://192.168.7.68:5432/iot-control?currentSchema=public&autoReconnect=true              # 数据库名称
     username: postgres
     password: 123456
     dbcp2:

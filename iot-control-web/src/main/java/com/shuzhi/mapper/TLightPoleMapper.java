@@ -20,4 +20,6 @@ public interface TLightPoleMapper{
     TLightPole findByTlightPoles(@Param("strings") Integer strings);
 
     List<TLightPole> findByFrtId(@Param("id") Integer id);
+
+    List<TLightPole> findAll();
 }

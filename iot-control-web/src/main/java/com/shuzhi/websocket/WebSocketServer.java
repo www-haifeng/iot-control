@@ -683,7 +683,7 @@ public class WebSocketServer {
      */
     @Scheduled(cron = "${send.light-cron}")
     public void light() throws ParseException, JsonProcessingException {
-        Integer modulecode = getModuleCode("light-frt");
+        Integer modulecode = getModuleCode("light");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
@@ -694,10 +694,46 @@ public class WebSocketServer {
             Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
             Optional.ofNullable(tFrtMapper).orElseGet(() -> tFrtMapper = ApplicationContextUtils.get(TFrtMapper.class));
             loopStatus = loopStatusServiceApi.findLoopStatus();
-            List<Loops> loops = new ArrayList<>();
-            List<Integer> count = new ArrayList<>();
+            /*List<Loops> loops = new ArrayList<>();
+            List<Integer> count = new ArrayList<>();*/
             if (loopStatus != null && loopStatus.size() != 0) {
-                //所有单灯信息
+                List<Loops> loops = new ArrayList<>();
+                loopStatus.forEach(loopStateDto -> {
+                    Loops loops1 = new Loops();
+                    loops1.setLoopid(loopStateDto.getId());
+                    loops1.setLoopnum(loopStateDto.getLoop());
+                    loops1.setLoopname(loopStateDto.getName());
+                    loops1.setOnoff(loopStateDto.getState());
+                    loops1.setState(loopStateDto.getState());
+                    List<TLightPole> all = tLightPoleMapper.findAll();
+                    all.forEach(tLightPole -> {
+                        List<Lampposts> lamppostsList = new ArrayList<>();
+                        DeviceLoop deviceLoop = new DeviceLoop();
+                        deviceLoop.setLoop(loopStateDto.getLoop());
+                        deviceLoop.setLamppostid(tLightPole.getLamppostid());
+                        List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
+                        if (deviceLoops != null){
+                            Lampposts lampposts = new Lampposts();
+                            lampposts.setLamppostid(tLightPole.getLamppostid());
+                            lampposts.setLamppostname(tLightPole.getLamppostname());
+                            List<DeviceLoop> deviceLoop1 = deviceLoopMapper.select(deviceLoop);
+                            List<Lights> lightsList = new ArrayList<>();
+                            deviceLoop1.forEach(deviceLoop2 -> {
+                                Lights lights = new Lights();
+                                lights.setName(deviceLoop2.getDeviceName());
+                                lights.setState(loopStateDto.getState());
+                                lights.setOnoff(loopStateDto.getState());
+                                lights.setId(deviceLoop2.getId());
+                                lightsList.add(lights);
+                            });
+                            lampposts.setLights(lightsList);
+                            lamppostsList.add(lampposts);
+                        }
+                        loops1.setLampposts(lamppostsList);
+                    });
+                    loops.add(loops1);
+                });
+               /* //所有单灯信息
                 loopStatus.forEach(tLoopStateDto -> {
                     Loops loops1 = new Loops();
                     //根据灯杆id查询
@@ -740,11 +776,11 @@ public class WebSocketServer {
                         loops1.setLampposts(lamppostsList);
                         loops.add(loops1);
                     }
-                });
+                });*/
                 LightMsg lightMsg = new LightMsg(loops);
                 messageVo.setMsg(lightMsg);
                 send(code, JSON.toJSONString(messageVo, SerializerFeature.DisableCircularReferenceDetect));
-               // send(code,objectMapper.writeValueAsString(messageVo));
+                // send(code,objectMapper.writeValueAsString(messageVo));
 
                 //所有单灯信息（分组）
                 List<Groups> groups = new ArrayList<>();
@@ -914,7 +950,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.lcd-cron}")
     public void lcd() throws ParseException, JsonProcessingException {
         //查出led的 moduleCode
-        Integer modulecode = getModuleCode("lcd-frt");
+        Integer modulecode = getModuleCode("lcd");
         String code = String.valueOf(modulecode);
         //判断该连接是要被关闭
         if (isOnClose(code)) {
@@ -1041,7 +1077,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.led-cron}")
     public void led() throws ParseException {
         //查出led的 moduleCode
-        Integer modulecode = getModuleCode("led-frt");
+        Integer modulecode = getModuleCode("led");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
@@ -1144,7 +1180,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.frt-cron}")
     private void frt() throws ParseException {
         //查出frt的 moduleCode
-        Integer modulecode = getModuleCode("ring-frt");
+        Integer modulecode = getModuleCode("environment");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);
@@ -1159,11 +1195,13 @@ public class WebSocketServer {
                 for (TDataDto status : dataAllStatus) {
                     //根据设备did查找灯杆id
                     List<Integer> strings = deviceLoopMapper.findByLamppostId(status.getDid());
-                    //在根据灯杆id查询所有灯杆信息
-                    List<TLightPole> lists = tLightPoleMapper.findByTlightPole(strings);
-                    for (TLightPole list : lists) {
-                        status.setLamppostid(list.getLamppostid());
-                        status.setLamppostname(list.getLamppostname());
+                    if (strings != null && strings.size() > 0){
+                        //在根据灯杆id查询所有灯杆信息
+                        List<TLightPole> lists = tLightPoleMapper.findByTlightPole(strings);
+                        for (TLightPole list : lists) {
+                            status.setLamppostid(list.getLamppostid());
+                            status.setLamppostname(list.getLamppostname());
+                        }
                     }
                 }
                 //所有环测的状态信息
@@ -1193,7 +1231,7 @@ public class WebSocketServer {
     @Scheduled(cron = "${send.spon-cron}")
     private void spon() throws ParseException {
         //查出spon的 moduleCode
-        Integer modulecode = getModuleCode("spon-frt");
+        Integer modulecode = getModuleCode("broadcast");
         String code = String.valueOf(modulecode);
         if (isOnClose(code)) {
             MessageVo messageVo = setMessageVo(modulecode);

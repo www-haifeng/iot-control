@@ -33,4 +33,7 @@
     <select id="findByFrtId" resultMap="tLightPoleMap" parameterType="integer">
         select * from t_light_pole where frtid=#{id}
     </select>
+    <select id="findAll" resultMap="tLightPoleMap">
+        select * from t_light_pole
+    </select>
 </mapper>

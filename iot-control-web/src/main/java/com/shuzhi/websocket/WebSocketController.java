@@ -92,7 +92,6 @@ public class WebSocketController {
      */
     private void frtLight(List<SimpleProtocolVo> simpleProtocolVos, Msg msg,Integer msgcode) {
         Optional.ofNullable(msg.getLoops()).ifPresent(strings -> {
-            log.info("接收到照明回路控制的命令 {} , {}", msg, new Date());
             DeviceLoop deviceLoopSelect = new DeviceLoop();
             strings.forEach(s -> {
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
@@ -107,6 +106,7 @@ public class WebSocketController {
                 simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
                 //判断msgcode掉那个设备接口
                 if (msgcode == 220006){
+                    log.info("接收到照明回路控制的命令 {} , {}", msg, new Date());
                     //回路控制器
                     //回路数组
                     data.put("loops", msg.getLoops());
@@ -114,6 +114,7 @@ public class WebSocketController {
                     data.put("cmdtype", msg.getCmdtype());
                 }
                 if (msgcode == 220007) {
+                    log.info("接收到照明集中控制器的命令 {} , {}", msg, new Date());
                     //集中控制器
                     //回路数组
                     data.put("loops", msg.getLoops());
@@ -124,6 +125,7 @@ public class WebSocketController {
                     data.put("controllerid",msg.getControllerid());
                 }
                 if (msgcode == 220008) {
+                    log.info("接收到照明点选集中控制器的命令 {} , {}", msg, new Date());
                     //点选集中控制器
                     //回路数组
                     data.put("loops", msg.getLoops());
@@ -139,7 +141,6 @@ public class WebSocketController {
             });
         });
         Optional.ofNullable(msg.getLights()).ifPresent(strings ->  {
-            log.info("接收到照明单灯控制的命令 {} , {}", msg, new Date());
             DeviceLoop deviceLoopSelect = new DeviceLoop();
             strings.forEach(s -> {
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
@@ -154,6 +155,7 @@ public class WebSocketController {
                 simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
                 //判断msgcode掉那个设备接口
                 if (msgcode == 220009){
+                    log.info("接收到单灯控制的命令 {} , {}", msg, new Date());
                     //单灯控制
                     data.put("lights", msg.getLoops());
                     //命令类型：1-开；0-关；3-调光
@@ -162,6 +164,7 @@ public class WebSocketController {
                     data.put("lightvalue",msg.getLight());
                 }
                 if (msgcode == 220010) {
+                    log.info("接收到点选灯杆的命令 {} , {}", msg, new Date());
                     //点选灯杆
                     data.put("lights", msg.getLoops());
                     //命令类型：1-开；0-关；3-调光
@@ -256,7 +259,7 @@ public class WebSocketController {
                             break;
                         //音量
                         case 5:
-                            simpleProtocolVo.setCmdid(msgCodeService.findThingsMsgKey("led-tecnon-10006").getMsgCode());
+                            simpleProtocolVo.setCmdid(msgCodeService.findThingsMsgKey("led-tecnon-10004").getMsgCode());
                             hashMap.put("arg1", msg.getVolume());
                             simpleProtocolVo.setData(hashMap);
                             break;
@@ -264,7 +267,7 @@ public class WebSocketController {
                     }
                 } else {
                     //重启
-                    simpleProtocolVo.setCmdid("10005");
+                    simpleProtocolVo.setCmdid("10007");
                 }
                 simpleProtocolVos.add(simpleProtocolVo);
             });
