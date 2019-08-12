@@ -6,6 +6,7 @@ import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shuzhi.entity.*;
+
 import com.shuzhi.frt.entities.OfflinesRingVo;
 import com.shuzhi.frt.entities.StatisticalPoleVo;
 import com.shuzhi.frt.entities.TDataDto;
@@ -570,7 +571,7 @@ public class WebSocketServer {
      * led首次连接信息 也需要定时向前台推送
      */
     @Scheduled(cron = "${send.led-cron}")
-    public void led() throws ParseException {
+    public void led() throws ParseException ,JsonProcessingException {
         //查出led的 moduleCode
         Integer modulecode = getModuleCode("led");
         String code = String.valueOf(modulecode);
@@ -639,9 +640,13 @@ public class WebSocketServer {
                 }
                 GroupsLedMsg groupsLedMsg = new GroupsLedMsg(groupsLeds);
                 messageVo.setMsg(groupsLedMsg);
-                send(code, JSON.toJSONString(messageVo));
+                    try {
+                        send(code, objectMapper.writeValueAsString(messageVo));
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
+                    }
 
-                allStatus.forEach(tStatusDto -> {
+                    allStatus.forEach(tStatusDto -> {
                     tStatusDto.setVolume(null);
                     tStatusDto.setLight(null);
                 });

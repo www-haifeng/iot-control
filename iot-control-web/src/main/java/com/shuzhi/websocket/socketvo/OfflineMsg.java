@@ -25,8 +25,14 @@ public class OfflineMsg {
     public void offlineLcdMsg(List<IotLcdStatusTwo> allStatusByRedis) {
 
         allStatusByRedis.forEach(iotLcdStatusTwo -> {
-            OfflineVo offlineVo = new OfflineVo();//TODO 离线设备
-            offlines.add(offlineVo);
+            if (iotLcdStatusTwo.getOnoff() == 0){
+                OfflineVo offlineVo = new OfflineVo();//TODO 离线设备
+                offlineVo.setId(Long.valueOf(iotLcdStatusTwo.getId()));
+                offlineVo.setName(iotLcdStatusTwo.getName());
+                offlineVo.setOfflinetime(iotLcdStatusTwo.getTimestamp());
+                offlineVo.setState(Integer.valueOf(iotLcdStatusTwo.getStatus()));
+                offlines.add(offlineVo);
+            }
         });
 
 
@@ -35,8 +41,14 @@ public class OfflineMsg {
     public void offlineLedMsg(List<TStatusDto> allStatus) {
 
         allStatus.forEach(tStatusDto -> {
-            OfflineVo offlineVo = new OfflineVo();// TODO 离线设备
-            offlines.add(offlineVo);
+            if (tStatusDto.getOnoff() == 0){
+                OfflineVo offlineVo = new OfflineVo();//TODO 离线设备
+                offlineVo.setId(Long.valueOf(tStatusDto.getId()));
+                offlineVo.setName(tStatusDto.getName());
+                offlineVo.setOfflinetime(tStatusDto.getTimestamp());
+                offlineVo.setState(Integer.valueOf(tStatusDto.getState()));
+                offlines.add(offlineVo);
+            };
         });
 
     }

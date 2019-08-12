@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.shuzhi.mapper.LighpoleMapper">
+
+	<!-- 可根据自己的需求，是否要使用 -->
+    <resultMap type="com.shuzhi.entity.Lighpole" id="lighpoleMap">
+        <result property="id" column="id" />
+        <result property="lamppostid" column="lamppostid" />
+        <result property="lamppostname" column="lamppostname" />
+        <result property="longitude" column="longitude" />
+        <result property="latitude" column="latitude" />
+    </resultMap>
+    <resultMap type="com.shuzhi.lightpole.entities.Lighpole" id="lighpolesMap">
+        <result property="id" column="id" />
+        <result property="lamppostid" column="lamppostid" />
+        <result property="lamppostname" column="lamppostname" />
+        <result property="longitude" column="longitude" />
+        <result property="latitude" column="latitude" />
+        <result property="deviceType" column="device_type"/>
+    </resultMap>
+    <select id="findAlls" resultMap="lighpolesMap">
+        SELECT
+            t.id,t.lamppostid,t.lamppostname,t.longitude,t.latitude ,array_to_string(ARRAY_AGG ( DISTINCT d.device_type ),',' ) as device_type
+        FROM  t_light_pole t LEFT join t_lightpole_dev  d on t.lamppostid = d.lamppostid
+        GROUP BY t.id ,t.lamppostid,t.lamppostname,t.longitude,t.latitude
+    </select>
+</mapper>

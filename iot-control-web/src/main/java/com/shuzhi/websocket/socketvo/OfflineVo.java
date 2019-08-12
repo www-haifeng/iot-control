@@ -16,21 +16,6 @@ public class OfflineVo {
     private Long id;
 
     /**
-     * 1-顶棚照明；2-灯箱照明；3-logo照明；4-LED；5-LCD
-     */
-    private Integer type;
-
-    /**
-     * 站名称
-     */
-    private String stationname;
-
-    /**
-     * 设备名称
-     */
-    private String devicename;
-
-    /**
      * 站名称
      */
     private String name;
