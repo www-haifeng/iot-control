@@ -17,23 +17,22 @@ import com.shuzhi.lcd.service.TEventLcdService;
 import com.shuzhi.led.entities.TStatusDto;
 import com.shuzhi.led.service.TEventLedService;
 import com.shuzhi.led.service.TStatusService;
-import com.shuzhi.light.entities.GatewayRedis;
-import com.shuzhi.light.entities.StatisticsVo;
 import com.shuzhi.light.entities.TLoopStateDto;
 import com.shuzhi.light.service.LoopStatusServiceApi;
-import com.shuzhi.mapper.DeviceLoopMapper;
 import com.shuzhi.mapper.StationMapper;
-import com.shuzhi.mapper.TFrtMapper;
-import com.shuzhi.mapper.TLightPoleMapper;
 import com.shuzhi.rabbitmq.Message;
-import com.shuzhi.service.DeviceLoopService;
-import com.shuzhi.service.DeviceStationService;
+import com.shuzhi.service.LightpoleDevService;
 import com.shuzhi.service.MqMessageService;
 import com.shuzhi.service.StationService;
+import com.shuzhi.service.serviceimpl.GroupDeviceServiceImpl;
+import com.shuzhi.service.serviceimpl.GroupServiceImpl;
+import com.shuzhi.service.serviceimpl.LighpoleServiceImpl;
+import com.shuzhi.service.serviceimpl.LightpoleDevServiceImpl;
 import com.shuzhi.spon.entitys.Bcsts;
 import com.shuzhi.spon.entitys.Offlines;
 import com.shuzhi.spon.entitys.TEventMessage;
 import com.shuzhi.spon.service.TEventSponService;
+import com.shuzhi.utils.ConstantUtils;
 import com.shuzhi.websocket.socketvo.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -72,25 +71,31 @@ public class WebSocketServer {
 
     private IotLcdsStatusService iotLcdStatusService;
 
-    private DeviceLoopService deviceLoopService;
+    //private DeviceLoopService deviceLoopService;
 
-    private DeviceStationService deviceStationService;
+    //private DeviceStationService deviceStationService;
 
     private StationService stationService;
 
     private TEventSponService tEventSponService;
 
-    private DeviceLoopMapper deviceLoopMapper;
+    //private DeviceLoopMapper deviceLoopMapper;
 
-    private TLightPoleMapper tLightPoleMapper;
+    //private TLightPoleMapper tLightPoleMapper;
 
     private TEventLedService tEventLedService;
 
     private TEventLcdService tEventLcdService;
 
-    private StationMapper stationMapper;
+    private LightpoleDevService lightpoleDevService;
 
-    private TFrtMapper tFrtMapper;
+    private LighpoleServiceImpl lighpoleService;
+
+    private GroupServiceImpl groupService;
+
+    private GroupDeviceServiceImpl groupDeviceService;
+
+    private StationMapper stationMapper;
 
     private static Map<String, CopyOnWriteArrayList<Session>> SESSION_MAP = new ConcurrentHashMap<>();
     private static Hashtable<String, Integer> sessionCodeMap = new Hashtable<>();
@@ -240,10 +245,6 @@ public class WebSocketServer {
                     //调用照明设备信息
                     light();
                     break;
-                case "platform":
-                    //调用站台信息
-                    platform();
-                    break;
                 case "frt":
                     //调用环测
                     frt();
@@ -277,406 +278,6 @@ public class WebSocketServer {
         }
     }
 
-    /**
-     * 拼装并发送站台管理信息
-     */
-    @Scheduled(cron = "${send.platform-cron}")
-    private void platform() throws ParseException {
-        //查出led的 moduleCode
-        Integer modulecode = getModuleCode("platform");
-        String code = String.valueOf(modulecode);
-        if (isOnClose(code)) {
-            MessageVo messageVo = setMessageVo(modulecode);
-            messageVo.setMsgcode(202002);
-            List<DevicesMsg> lights = new ArrayList<>();
-            //判断是什么设备
-            Optional.ofNullable(deviceStationService).orElseGet(() -> deviceStationService = ApplicationContextUtils.get(DeviceStationService.class));
-            Optional.ofNullable(stationService).orElseGet(() -> stationService = ApplicationContextUtils.get(StationService.class));
-            //查询所有的公交站
-            Optional.ofNullable(stationMapper).orElseGet(() -> stationMapper = ApplicationContextUtils.get(StationMapper.class));
-            List<Station> stations = stationMapper.selectAll();
-
-            DeviceStation deviceStationSelcet = new DeviceStation();
-            stations.forEach(station -> {
-
-                Integer stationid = station.getId();
-                //查出该公交站下所有的设备
-                deviceStationSelcet.setStationid(stationid);
-                DevicesMsg devicesMsg = new DevicesMsg();
-                devicesMsg.setStationid(stationid);
-                devicesMsg.setStationname(station.getStationName());
-                List<Devices> devices = new ArrayList<>();
-
-                //添加lcd设备
-                try {
-                    setLcdDevices(devicesMsg, devices, stationid);
-                } catch (Exception e) {
-                    log.error("站台管理 获取lcd设备信息失败 : {}", e.getMessage());
-                }
-                //添加led设备
-                try {
-                    setLedDevices(devicesMsg, devices, stationid);
-                } catch (Exception e) {
-                    log.error("站台管理 获取led设备信息失败 : {}", e.getMessage());
-                }
-                //添加照明设备
-                try {
-                    setLightDevices(devicesMsg, devices, stationid);
-                } catch (Exception e) {
-                    log.error("站台管理 获取照明设备信息失败 : {}", e.getMessage());
-                }
-                lights.add(devicesMsg);
-            });
-            messageVo.setMsg(lights);
-            send(code, JSON.toJSONString(messageVo));
-            //拼装并发送站台统计信息
-            messageVo.setMsgcode(202001);
-            messageVo.setMsg(platformStatis());
-            send(code, JSON.toJSONString(messageVo));
-            //拼装并发送单个站台的信息
-            messageVo.setMsgcode(202003);
-            messageVo.setMsg(getSums(lights));
-            send(code, JSON.toJSONString(messageVo));
-            //发送单站离线设备信息
-            messageVo.setMsgcode(202005);
-            messageVo.setMsg(new StationsMsg(lights));
-            send(code, JSON.toJSONString(messageVo));
-
-            log.info("站台定时任务时间 : {}", messageVo.getTimestamp());
-        }
-    }
-
-    /**
-     * 计算站台设备能耗
-     *
-     * @param lights 站台设备信息
-     * @return 计算结果
-     */
-    private SumsMsg getSums(List<DevicesMsg> lights) {
-
-        Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
-        Optional.ofNullable(stationMapper).orElseGet(() -> stationMapper = ApplicationContextUtils.get(StationMapper.class));
-
-        List<SumsVo> sumsVos = new ArrayList<>();
-        List<SumsVo> sumsVoList = new ArrayList<>();
-
-        lights.forEach(devicesMsg -> {
-            SumsVo sumsVo = new SumsVo();
-            sumsVo.setStationid(devicesMsg.getStationid());
-            sumsVo.setStationname(devicesMsg.getStationname());
-            //查出该站下所有的设备
-            List<DeviceLoop> deviceLoopList = deviceLoopMapper.findByStationId(devicesMsg.getStationid());
-            if (deviceLoopList != null && deviceLoopList.size() != 0) {
-                //计算能耗
-                try {
-                    stationConsumption(sumsVo, deviceLoopList);
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                }
-            }
-            sumsVos.add(sumsVo);
-        });
-        //遍历所有公交站 将公交站名称相同的 加起来
-        List<Station> stations = stationMapper.selectAll();
-        stations.forEach(station -> {
-            SumsVo sumsVo = new SumsVo();
-            sumsVo.setStationname(station.getStationName());
-            sumsVo.setStationid(station.getId());
-            sumsVos.forEach(sumsVo1 -> {
-                if (station.getId().equals(sumsVo1.getStationid())) {
-                    sumsVo.setData(sumsVo1);
-                }
-            });
-            sumsVoList.add(sumsVo);
-        });
-
-        return new SumsMsg(sumsVoList);
-    }
-
-    /**
-     * 计算公交站的能耗
-     *
-     * @param sumsVo         要封装的能耗信息
-     * @param deviceLoopList deviceLoopList 公交站下的设备信息
-     */
-    private void stationConsumption(SumsVo sumsVo, List<DeviceLoop> deviceLoopList) throws ParseException {
-        //本月能耗
-        float currentmonth = 0;
-        //上月能耗
-        float lastmonth = 0;
-        //本年能耗
-        float thisyear = 0;
-        //灯箱能耗
-        float lamphouse = 0;
-        //顶棚能耗
-        float platfond = 0;
-        //logo能耗
-        float logo = 0;
-        //led能耗
-        float led = 0;
-        //lcd能耗
-        float lcd = 0;
-
-        StatisticsVo statisticsVo = new StatisticsVo();
-        for (DeviceLoop deviceLoop : deviceLoopList) {
-            //计算能耗
-            statisticsVo.setDid(deviceLoop.getGatewayDid());
-            statisticsVo.setLoop(deviceLoop.getLoop());
-
-            StatisticsMsgVo statistics = Statistics.findStatistics(statisticsVo);
-            currentmonth = currentmonth + statistics.getCurrentmonth();
-            lastmonth = lastmonth + statistics.getLastmonth();
-            thisyear = thisyear + statistics.getThisyear();
-
-            switch (deviceLoop.getTypecode()) {
-                //顶棚照明
-                case "1":
-                    platfond = platfond + statistics.getActivepowerNow();
-                    break;
-                //灯箱照明
-                case "2":
-                    lamphouse = lamphouse + statistics.getActivepowerNow();
-                    break;
-                //logo
-                case "3":
-                    logo = logo + statistics.getActivepowerNow();
-                    break;
-                //led
-                case "4":
-                    led = led + statistics.getActivepowerNow();
-                    break;
-                //lcd
-                case "5":
-                    lcd = lcd + statistics.getActivepowerNow();
-                    break;
-
-                default:
-            }
-
-        }
-        sumsVo.setCurrentmonth(currentmonth);
-        sumsVo.setLastmonth(lastmonth);
-        sumsVo.setThisyear(thisyear);
-        sumsVo.setLamphouse(lamphouse);
-        sumsVo.setPlatfond(platfond);
-        sumsVo.setLogo(logo);
-        sumsVo.setLed(led);
-        sumsVo.setLed(led);
-    }
-
-    /**
-     * 拼装站台统计信息
-     *
-     * @return 拼装好的消息
-     */
-    @SuppressWarnings("Duplicates")
-    private PlatformStatisVo platformStatis() throws ParseException {
-
-        PlatformStatisVo platformStatisVo = new PlatformStatisVo();
-        Optional.ofNullable(deviceLoopService).orElseGet(() -> deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class));
-        DeviceLoop deviceLoopSelect = new DeviceLoop();
-        StatisticsVo statisticsVo = new StatisticsVo();
-        //本月
-        float currentmonth = 0;
-        //上月
-        float lastmonth = 0;
-        //本年
-        float thisyear = 0;
-
-        //lcd设备
-        if (allStatusByRedis != null) {
-            platformStatisVo.setLcdtotal(allStatusByRedis.size());
-            //获取开启设备和关闭设备的总数
-            platformStatisVo.setLcdonline((int) allStatusByRedis.stream().filter(iotLcdStatusTwo -> "1".equals(iotLcdStatusTwo.getStatus())).count());
-            platformStatisVo.setLcdoffline((int) allStatusByRedis.stream().filter(iotLcdStatusTwo -> "0".equals(iotLcdStatusTwo.getStatus())).count());
-            //能耗信息
-            //查出设备的回路号
-            for (IotLcdStatusTwo iotLcdStatusTwo : allStatusByRedis) {
-                deviceLoopSelect.setDeviceDid(iotLcdStatusTwo.getId());
-                //获得lcd设备的统计信息
-                deviceLoopSelect.setDeviceDid(iotLcdStatusTwo.getId());
-                deviceLoopSelect.setTypecode("5");
-                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-                if (deviceLoop != null) {
-                    statisticsVo.setLoop(deviceLoop.getLoop());
-                    statisticsVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
-                }
-                StatisticsMsgVo statistics = Statistics.findStatistics(statisticsVo);
-                currentmonth = currentmonth + statistics.getCurrentmonth();
-                lastmonth = lastmonth + statistics.getLastmonth();
-                thisyear = thisyear + statistics.getThisyear();
-            }
-        }
-        //获得led设备统计信息
-        if (allStatus != null) {
-            platformStatisVo.setLedtotal(allStatus.size());
-            platformStatisVo.setLedtotal((int) allStatus.stream().filter(tStatusDto -> 1 == (tStatusDto.getState())).count());
-            platformStatisVo.setLedtotal((int) allStatus.stream().filter(tStatusDto -> 0 == (tStatusDto.getState())).count());
-            //能耗信息
-            //查出设备的回路号
-            for (TStatusDto status : allStatus) {
-                deviceLoopSelect.setDeviceDid(status.getId());
-                deviceLoopSelect.setTypecode("4");
-                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-                if (deviceLoop != null) {
-                    statisticsVo.setLoop(deviceLoop.getLoop());
-                    statisticsVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
-                }
-                StatisticsMsgVo statistics = Statistics.findStatistics(statisticsVo);
-                currentmonth = currentmonth + statistics.getCurrentmonth();
-                lastmonth = lastmonth + statistics.getLastmonth();
-                thisyear = thisyear + statistics.getThisyear();
-            }
-        }
-        //获得照明设备统计信息
-        if (loopStatus != null) {
-            platformStatisVo.setLighttotal(loopStatus.size());
-            platformStatisVo.setLightonline((int) loopStatus.stream().filter(loopStateDto -> 1 == (loopStateDto.getState())).count());
-            platformStatisVo.setLightoffline((int) loopStatus.stream().filter(loopStateDto -> 0 == (loopStateDto.getState())).count());
-            //能耗信息
-            //查出设备的回路号
-            for (TLoopStateDto status : loopStatus) {
-                statisticsVo.setLoop(status.getLoop());
-                statisticsVo.setDid(String.valueOf(status.getGatewayId()));
-                StatisticsMsgVo statistics = Statistics.findStatistics(statisticsVo);
-                currentmonth = currentmonth + statistics.getCurrentmonth();
-                lastmonth = lastmonth + statistics.getLastmonth();
-                thisyear = thisyear + statistics.getThisyear();
-            }
-        }
-        platformStatisVo.setCurrentmonth(currentmonth);
-        platformStatisVo.setLastmonth(lastmonth);
-        platformStatisVo.setThisyear(thisyear);
-        return platformStatisVo;
-    }
-
-    /**
-     * 封装照明设备信息
-     *
-     * @param devicesMsg 总设备信息
-     * @param devices    照明设备信息
-     * @param stationid  站台id
-     */
-    private void setLightDevices(DevicesMsg devicesMsg, List<Devices> devices, Integer stationid) {
-
-        //判断照明设备是否为空
-        Optional.ofNullable(loopStatus).orElseGet(() -> {
-            Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
-            loopStatus = loopStatusServiceApi.findLoopStatus();
-            return loopStatus;
-        });
-        Optional.ofNullable(deviceLoopService).orElseGet(() -> deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class));
-        Optional.ofNullable(deviceStationService).orElseGet(() -> deviceStationService = ApplicationContextUtils.get(DeviceStationService.class));
-        //判断该设备是否在该网关下
-        DeviceStation deviceStationSelect = new DeviceStation();
-        loopStatus.forEach(loopStateDto -> {
-        //通过回路id查出设备id
-        DeviceLoop deviceLoopSelect = new DeviceLoop();
-        deviceLoopSelect.setGatewayDid(loopStateDto.getGatewayId());
-        deviceLoopSelect.setLoop(loopStateDto.getLoop());
-        DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-        if (deviceLoop != null) {
-            deviceStationSelect.setDeviceDid(deviceLoop.getDeviceDid());
-            deviceStationSelect.setTypecode(deviceLoop.getTypecode());
-            DeviceStation deviceStation = deviceStationService.selectOne(deviceStationSelect);
-            if (deviceStation != null) {
-                    if (stationid.equals(deviceStation.getStationid())) {
-                        Devices device = new Devices(loopStateDto);
-                        devices.add(device);
-                    }
-                }
-            }
-        });
-        devicesMsg.setDevices(devices);
-    }
-
-    /**
-     * 站台管理 添加led设备
-     *
-     * @param devicesMsg 要返回的设备信息
-     * @param devices    所有设备信息
-     * @param stationid  站台id
-     */
-    private void setLedDevices(DevicesMsg devicesMsg, List<Devices> devices, Integer stationid) {
-
-        //判断led设备是否为空
-        Optional.ofNullable(allStatus).orElseGet(() -> {
-            Optional.ofNullable(tStatusService).orElseGet(() -> tStatusService = ApplicationContextUtils.get(TStatusService.class));
-            allStatus = tStatusService.findAllStatusByRedis();
-            return allStatus;
-        });
-        //判断该设备是否在该网关下
-        isInGateway(devicesMsg, devices, stationid, "4");
-
-    }
-
-
-    /**
-     * 站台管理添加lcd设备
-     *
-     * @param devicesMsg 要返回的设备信息
-     * @param devices    所有设备信息
-     * @param stationid  站台id
-     */
-    private void setLcdDevices(DevicesMsg devicesMsg, List<Devices> devices, Integer stationid) {
-
-        Optional.ofNullable(deviceStationService).orElseGet(() -> deviceStationService = ApplicationContextUtils.get(DeviceStationService.class));
-        Optional.ofNullable(iotLcdStatusService).orElseGet(() -> iotLcdStatusService = ApplicationContextUtils.get(IotLcdsStatusService.class));
-        //判断lcd设备是否为空 如果为空就去查询
-        Optional.ofNullable(allStatusByRedis).orElseGet(() -> {
-            Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
-            allStatusByRedis = iotLcdStatusService.findAllStatusByRedis();
-            return allStatusByRedis;
-        });
-        //判断该设备是否在该站台下
-        isInGateway(devicesMsg, devices, stationid, "5");
-    }
-
-    /**
-     * 提取重复代码 判断该设备是否在该网关下
-     *
-     * @param devicesMsg 要封装的设备
-     * @param devices    设备
-     * @param stationid  公交站id
-     * @param s
-     */
-    @SuppressWarnings("Duplicates")
-    private void isInGateway(DevicesMsg devicesMsg, List<Devices> devices, Integer stationid, String s) {
-        DeviceStation deviceStationSelect = new DeviceStation();
-        if (StringUtils.equals("4", s)) {
-            allStatus.stream().filter(iotLedStatus -> {
-                //查出设备信息
-                deviceStationSelect.setTypecode(s);
-                deviceStationSelect.setDeviceDid(iotLedStatus.getId());
-                DeviceStation deviceStation = deviceStationService.selectOne(deviceStationSelect);
-                //判断是否在该公交站下
-                if (deviceStation != null) {
-                    return stationid.equals(deviceStation.getStationid());
-                }
-                return false;
-            })
-                    .forEach(iotLcdStatus -> {
-                        Devices device = new Devices(iotLcdStatus);
-                        devices.add(device);
-                    });
-        } else {
-            allStatusByRedis.stream().filter(iotLedStatus -> {
-                deviceStationSelect.setTypecode(s);
-                deviceStationSelect.setDeviceDid(iotLedStatus.getId());
-                DeviceStation deviceStation = deviceStationService.selectOne(deviceStationSelect);
-                if (deviceStation != null) {
-                    return stationid.equals(deviceStation.getStationid());
-                }
-                return false;
-            })
-                    .forEach(iotLcdStatus -> {
-                        Devices device = new Devices(iotLcdStatus);
-                        devices.add(device);
-                    });
-        }
-        devicesMsg.setDevices(devices);
-    }
-
 
     /**
      * 照明首次连接 同时也定时推送
@@ -690,59 +291,24 @@ public class WebSocketServer {
             messageVo.setMsgcode(220001);
             //调用接口 获取当前照明状态
             Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
-            Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
-            Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
-            Optional.ofNullable(tFrtMapper).orElseGet(() -> tFrtMapper = ApplicationContextUtils.get(TFrtMapper.class));
+            Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevService.class));
+            Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
+
             loopStatus = loopStatusServiceApi.findLoopStatus();
-            /*List<Loops> loops = new ArrayList<>();
-            List<Integer> count = new ArrayList<>();*/
+            List<Loops> loops = new ArrayList<>();
             if (loopStatus != null && loopStatus.size() != 0) {
-                List<Loops> loops = new ArrayList<>();
-                loopStatus.forEach(loopStateDto -> {
-                    Loops loops1 = new Loops();
-                    loops1.setLoopid(loopStateDto.getId());
-                    loops1.setLoopnum(loopStateDto.getLoop());
-                    loops1.setLoopname(loopStateDto.getName());
-                    loops1.setOnoff(loopStateDto.getState());
-                    loops1.setState(loopStateDto.getState());
-                    List<TLightPole> all = tLightPoleMapper.findAll();
-                    all.forEach(tLightPole -> {
-                        List<Lampposts> lamppostsList = new ArrayList<>();
-                        DeviceLoop deviceLoop = new DeviceLoop();
-                        deviceLoop.setLoop(loopStateDto.getLoop());
-                        deviceLoop.setLamppostid(tLightPole.getLamppostid());
-                        List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
-                        if (deviceLoops != null){
-                            Lampposts lampposts = new Lampposts();
-                            lampposts.setLamppostid(tLightPole.getLamppostid());
-                            lampposts.setLamppostname(tLightPole.getLamppostname());
-                            List<DeviceLoop> deviceLoop1 = deviceLoopMapper.select(deviceLoop);
-                            List<Lights> lightsList = new ArrayList<>();
-                            deviceLoop1.forEach(deviceLoop2 -> {
-                                Lights lights = new Lights();
-                                lights.setName(deviceLoop2.getDeviceName());
-                                lights.setState(loopStateDto.getState());
-                                lights.setOnoff(loopStateDto.getState());
-                                lights.setId(deviceLoop2.getId());
-                                lightsList.add(lights);
-                            });
-                            lampposts.setLights(lightsList);
-                            lamppostsList.add(lampposts);
-                        }
-                        loops1.setLampposts(lamppostsList);
-                    });
-                    loops.add(loops1);
-                });
-               /* //所有单灯信息
+                //所有单灯信息
                 loopStatus.forEach(tLoopStateDto -> {
                     Loops loops1 = new Loops();
-                    //根据灯杆id查询
-                    TLoopStateDto tLoopStateDto1 = new TLoopStateDto();
-                    tLoopStateDto1.setGatewayId(tLoopStateDto.getGatewayId());
-                    tLoopStateDto1.setLoop(tLoopStateDto.getLoop());
-                    //根据设备did查找灯杆id
-                    Integer strings = deviceLoopMapper.findsByLamppostId(tLoopStateDto1);
-                    if(!count.contains(strings)){
+                    //设备的did去查询灯杆对应设备
+                    LightpoleDev lightpoleDev = new LightpoleDev();
+                    lightpoleDev.setDeviceId(tLoopStateDto.getId());
+                    LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
+                    //根据灯灯杆id查询灯杆信息
+                    Lighpole lighpole = new Lighpole();
+                    lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+                    Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+
                         List<Lights> light = new ArrayList<>();
                         List<Lampposts> lamppostsList = new ArrayList<>();
                         loops1.setLoopid(tLoopStateDto.getId());
@@ -750,18 +316,16 @@ public class WebSocketServer {
                         loops1.setLoopname(tLoopStateDto.getName());
                         loops1.setOnoff(tLoopStateDto.getState());
                         loops1.setState(tLoopStateDto.getState());
-                        count.add(strings);
-                        DeviceLoop deviceLoop = new DeviceLoop();
+
+                       /* DeviceLoop deviceLoop = new DeviceLoop();
                         deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
                         List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
                         for (DeviceLoop loop : deviceLoops) {
                             Lights lights = new Lights();
                             Lampposts lampposts = new Lampposts();
-                            //在根据灯杆id查询所有灯杆信息
-                            TLightPole lists = tLightPoleMapper.findByTlightPoles(loop.getLamppostid());
-                            lampposts.setLamppostid(lists.getLamppostid());
-                            lampposts.setLamppostname(lists.getLamppostname());
-                            deviceLoop.setLamppostid(null);
+                            lampposts.setLamppostid(lighpole1.getLamppostid());
+                            lampposts.setLamppostname(lighpole1.getLamppostname());
+
                             deviceLoop.setLoop(loop.getLoop());
                             deviceLoop.setGatewayDid(loop.getGatewayDid());
                             DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
@@ -771,12 +335,10 @@ public class WebSocketServer {
                             lights.setId(deviceLoop1.getId());
                             light.add(lights);
                             lampposts.setLights(light);
-                            lamppostsList.add(lampposts);
-                        }
-                        loops1.setLampposts(lamppostsList);
-                        loops.add(loops1);
-                    }
-                });*/
+                            lamppostsList.add(lampposts);*
+                        /*loops1.setLampposts(lamppostsList);
+                        loops.add(loops1);*/
+                });
                 LightMsg lightMsg = new LightMsg(loops);
                 messageVo.setMsg(lightMsg);
                 send(code, JSON.toJSONString(messageVo, SerializerFeature.DisableCircularReferenceDetect));
@@ -787,35 +349,37 @@ public class WebSocketServer {
                 List<Integer> count1 = new ArrayList<>();
                 if (loopStatus != null && loopStatus.size() != 0) {
                     loopStatus.forEach(tLoopStateDto -> {
-                        Groups groups1 = new Groups();
-                        //根据灯杆id查询
-                        TLoopStateDto tLoopStateDto1 = new TLoopStateDto();
-                        tLoopStateDto1.setGatewayId(tLoopStateDto.getGatewayId());
-                        tLoopStateDto1.setLoop(tLoopStateDto.getLoop());
-                        //根据设备did查找灯杆id
-                        Integer strings = deviceLoopMapper.findsByLamppostId(tLoopStateDto1);
-                        if(!count1.contains(strings)){
+                        //设备的did去查询灯杆对应设备
+                        LightpoleDev lightpoleDev = new LightpoleDev();
+                        lightpoleDev.setDeviceId(tLoopStateDto.getId());
+                        LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
+                        //根据灯灯杆id查询灯杆信息
+                        Lighpole lighpole = new Lighpole();
+                        lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+                        Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
                             List<Lights> light1 = new ArrayList<>();
                             List<Lampposts> lamppostsList1 = new ArrayList<>();
-                            //根据灯杆id查询
-                            TLightPole lists = tLightPoleMapper.findByTlightPoles(strings);
-                            //根据灯杆中的frtid查询
-                            Group groups2 = tFrtMapper.findById(lists.getFrtid());
-                            groups1.setGroupid(groups2.getId());
-                            groups1.setGroupname(groups2.getFrtName());
-                            count1.add(strings);
+                            //根据设备id查询
+                            GroupDevice groupDevice = new GroupDevice();
+                            groupDevice.setDeviceId(tLoopStateDto.getId().longValue());
+                            GroupDevice groups2 = groupDeviceService.selectOne(groupDevice);
+                            //根据关联表组id 查询
+                            Group group = new Group();
+                            group.setId(groups2.getGroupId());
+                            Group group1 = groupService.selectOne(group);
+                            Groups groups1 = new Groups();
+                            groups1.setGroupid(group1.getId().intValue());
+                            groups1.setGroupname(group1.getGroupName());
 
-                            DeviceLoop deviceLoop = new DeviceLoop();
+                           /* DeviceLoop deviceLoop = new DeviceLoop();
                             deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
                             List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
                             for (DeviceLoop loop : deviceLoops) {
                                 Lights lights1 = new Lights();
                                 Lampposts lampposts1 = new Lampposts();
-                                //在根据灯杆id查询所有灯杆信息
-                                TLightPole lists2 = tLightPoleMapper.findByTlightPoles(loop.getLamppostid());
-                                lampposts1.setLamppostid(lists2.getLamppostid());
-                                lampposts1.setLamppostname(lists2.getLamppostname());
-                                deviceLoop.setLamppostid(null);
+                                lampposts1.setLamppostid(lighpole1.getLamppostid());
+                                lampposts1.setLamppostname(lighpole1.getLamppostname());
+
                                 deviceLoop.setLoop(loop.getLoop());
                                 deviceLoop.setGatewayDid(loop.getGatewayDid());
                                 DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
@@ -828,8 +392,7 @@ public class WebSocketServer {
                                 lamppostsList1.add(lampposts1);
                             }
                             groups1.setLampposts(lamppostsList1);
-                            groups.add(groups1);
-                        }
+                            groups.add(groups1);*/
                     });
                 }
                 LightsMsg lightsMsg = new LightsMsg(groups);
@@ -852,10 +415,9 @@ public class WebSocketServer {
                 send(code,objectMapper.writeValueAsString(messageVo));
 
                 //所有集中控制器信息
-                List<Integer> count2 = new ArrayList<>();
                 List<Controllers> controllersList = new ArrayList<>();
                 loopStatus.forEach(tLoopStateDto -> {
-                    DeviceLoop deviceLoop = new DeviceLoop();
+                   /* DeviceLoop deviceLoop = new DeviceLoop();
                     deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
                     deviceLoop.setTypecode("7");
                     //根据设备信息查询单个设备
@@ -875,74 +437,23 @@ public class WebSocketServer {
                                 controllers.setState(0);
                             }
                         }
-                        //根据灯杆id查询
-                        TLoopStateDto tLoopStateDto2 = new TLoopStateDto();
-                        tLoopStateDto2.setGatewayId(tLoopStateDto.getGatewayId());
-                        tLoopStateDto2.setLoop(tLoopStateDto.getLoop());
-                        //根据设备did查找灯杆id
-                        Integer strings2 = deviceLoopMapper.findsByLamppostId(tLoopStateDto2);
-                        if(!count2.contains(strings2)) {
-                            count2.add(strings2);
-                            Loops loops2 = new Loops();
-                            loops2.setLoopid(tLoopStateDto.getId());
-                            loops2.setLoopnum(tLoopStateDto.getLoop());
-                            loops2.setLoopname(tLoopStateDto.getName());
-                            loops2.setOnoff(tLoopStateDto.getState());
-                            loops1.add(loops2);
-                        }
+                        Loops loops2 = new Loops();
+                        loops2.setLoopid(tLoopStateDto.getId());
+                        loops2.setLoopnum(tLoopStateDto.getLoop());
+                        loops2.setLoopname(tLoopStateDto.getName());
+                        loops2.setOnoff(tLoopStateDto.getState());
+                        loops1.add(loops2);
                         controllers.setLoopsList(loops1);
                         controllersList.add(controllers);
-                    }
-
+                    }*/
                 });
                 messageVo.setMsgcode(220005);
                 messageVo.setMsg(controllersList);
                 send(code,objectMapper.writeValueAsString(messageVo));
-
                 log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
             }
         }
     }
-
-    /**
-     * 照明设备统计信息
-     *
-     * @param loopStatus 照明设备信息
-     * @return 统计信息
-     */
-    private StatisticsMsgVo lightStatis(List<TLoopStateDto> loopStatus) throws ParseException {
-
-        List<String> dids1 = new ArrayList<>();
-        List<String> dids2 = new ArrayList<>();
-        List<String> dids3 = new ArrayList<>();
-        //取出所有的did
-        loopStatus.forEach(loopStateDto -> {
-            //通过回路号查询这个是什么设备
-            DeviceLoopService deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class);
-            DeviceLoop deviceLoopSelect = new DeviceLoop();
-            deviceLoopSelect.setLoop(loopStateDto.getLoop());
-            deviceLoopSelect.setGatewayDid(loopStateDto.getGatewayId());
-            DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-            if (deviceLoop != null) {
-                if ("1".equals(deviceLoop.getTypecode())) {
-                    dids1.add(String.valueOf(deviceLoop.getDeviceDid()));
-                }
-                if ("1".equals(deviceLoop.getTypecode())) {
-                    dids2.add(String.valueOf(deviceLoop.getDeviceDid()));
-                }
-                if ("1".equals(deviceLoop.getTypecode())) {
-                    dids3.add(String.valueOf(deviceLoop.getDeviceDid()));
-                }
-            }
-        });
-        //统计
-        StatisticsMsgVo statisticsMsgVo1 = equipStatis(dids1, "1");
-        StatisticsMsgVo statisticsMsgVo2 = equipStatis(dids1, "2");
-        StatisticsMsgVo statisticsMsgVo3 = equipStatis(dids1, "3");
-
-        return new StatisticsMsgVo(statisticsMsgVo1, statisticsMsgVo2, statisticsMsgVo3);
-    }
-
 
     /**
      * lcd首次连接信息 也需要定时向前台推送
@@ -959,31 +470,37 @@ public class WebSocketServer {
             messageVo.setMsgcode(230001);
             Optional.ofNullable(tEventLcdService).orElseGet(() -> tEventLcdService = ApplicationContextUtils.get(TEventLcdService.class));
             Optional.ofNullable(iotLcdStatusService).orElseGet(() -> iotLcdStatusService = ApplicationContextUtils.get(IotLcdsStatusService.class));
-            Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
-            Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
-            Optional.ofNullable(tFrtMapper).orElseGet(() -> tFrtMapper = ApplicationContextUtils.get(TFrtMapper.class));
+            Optional.ofNullable(groupService).orElseGet(() -> groupService = ApplicationContextUtils.get(GroupServiceImpl.class));
+            Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevServiceImpl.class));
+            Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
+
             allStatusByRedis = iotLcdStatusService.findAllStatusByRedis();
             if (allStatusByRedis != null && allStatusByRedis.size() != 0) {
                 List<GroupsLcd> groupsLcds = new ArrayList<>();
                 //查询所有组
-                List<Group> groups = tFrtMapper.findAll();
+                List<Group> groups = groupService.selectAll();
                 groups.forEach(group -> {
-                    //根据组id查询灯杆信息
-                    List<TLightPole> tLightPoles = tLightPoleMapper.findByFrtId(group.getId());
+                    //根据组设备类型查询灯杆信息
+                    LightpoleDev lightpoleDev = new LightpoleDev();
+                    lightpoleDev.setDeviceType(group.getDeviceType());
+                    List<LightpoleDev> lightpoleDevs = lightpoleDevService.select(lightpoleDev);
+
                     GroupsLcd groupsLcd = new GroupsLcd();
-                    groupsLcd.setGroupid(group.getId());
-                    groupsLcd.setGroupname(group.getFrtName());
+                    groupsLcd.setGroupid(group.getId().intValue());
+                    groupsLcd.setGroupname(group.getGroupName());
+
                     List<Lcdss> lcdsses = new ArrayList<>();
-                    tLightPoles.forEach(tLightPole -> allStatusByRedis.forEach(iotLcdStatusTwo -> {
-                        DeviceLoop deviceLoop = new DeviceLoop();
-                        deviceLoop.setDeviceDid(iotLcdStatusTwo.getId());
-                        deviceLoop.setTypecode("5");
-                        DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
-                        if(deviceLoop1 != null) {
-                            if (deviceLoop1.getLamppostid().equals(tLightPole.getLamppostid())) {
+                    lightpoleDevs.forEach(lightpoleDev1 -> allStatusByRedis.forEach(iotLcdStatusTwo -> {
+                        //根据设备id查询灯杆
+                        Lighpole lighpole = new Lighpole();
+                        lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+                        Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+
+                        if(lighpole1 != null) {
+                            if (lighpole1.getLamppostid().equals(lightpoleDev1.getLamppostid())) {
                                 Lcdss lcdss = new Lcdss();
-                                lcdss.setLamppostid(tLightPole.getLamppostid());
-                                lcdss.setLamppostname(tLightPole.getLamppostname());
+                                lcdss.setLamppostid(lighpole1.getLamppostid());
+                                lcdss.setLamppostname(lighpole1.getLamppostname());
                                 try {
                                     LcdConversionUtil.fatherToChild(iotLcdStatusTwo, lcdss);
                                     lcdsses.add(lcdss);
@@ -1002,13 +519,6 @@ public class WebSocketServer {
                 messageVo.setMsg(groupsLcdMsg);
                 send(code,objectMapper.writeValueAsString(messageVo));
 
-                //推送设备状态 将多余字段设置为 null
-                allStatusByRedis.forEach(iotLcdStatus -> iotLcdStatus.setVolume(null));
-                LcdMsg lcdMsg2 = new LcdMsg(allStatusByRedis);
-                messageVo.setMsg(lcdMsg2);
-                messageVo.setMsgcode(230002);
-                send(code, JSON.toJSONString(messageVo));
-
                 //推送统计信息
                 LightMsgVo lightMsgVo = new LightMsgVo();
                 lightMsgVo.lightMsgVoLcd(allStatusByRedis, tEventLcdService.findCountByTime());
@@ -1019,7 +529,7 @@ public class WebSocketServer {
                 //推送离线设备信息
                 messageVo.setMsgcode(230004);
                 OfflineMsg offlineMsg = new OfflineMsg();
-                offlineMsg.offlineLcdMsg(allStatusByRedis);
+                offlineMsg.offlineLcdMsg(allStatusByRedis);//TODO 判断离线设备
                 messageVo.setMsg(offlineMsg);
                 send(code, JSON.toJSONString(messageVo));
 
@@ -1057,21 +567,6 @@ public class WebSocketServer {
     }
 
     /**
-     * lcd设备统计信息
-     *
-     * @param allStatusByRedis 设备did
-     * @return 能耗信息
-     */
-    private StatisticsMsgVo lcdStatis(List<IotLcdStatusTwo> allStatusByRedis) throws ParseException {
-
-        List<String> dids = new ArrayList<>();
-        //取出所有的did
-        allStatusByRedis.forEach(iotLcdStatus -> dids.add(iotLcdStatus.getId()));
-        //统计
-        return equipStatis(dids, "5");
-    }
-
-    /**
      * led首次连接信息 也需要定时向前台推送
      */
     @Scheduled(cron = "${send.led-cron}")
@@ -1085,46 +580,63 @@ public class WebSocketServer {
             //调用接口
             Optional.ofNullable(tEventLedService).orElseGet(() -> tEventLedService = ApplicationContextUtils.get(TEventLedService.class));
             Optional.ofNullable(tStatusService).orElseGet(() -> tStatusService = ApplicationContextUtils.get(TStatusService.class));
-            Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
-            Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
-            Optional.ofNullable(tFrtMapper).orElseGet(() -> tFrtMapper = ApplicationContextUtils.get(TFrtMapper.class));
+            Optional.ofNullable(groupService).orElseGet(() -> groupService = ApplicationContextUtils.get(GroupServiceImpl.class));
+            Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevServiceImpl.class));
+            Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
+            Optional.ofNullable(groupDeviceService).orElseGet(() -> groupDeviceService = ApplicationContextUtils.get(GroupDeviceServiceImpl.class));
+
             allStatus = tStatusService.findAllStatusByRedis();
             if (allStatus != null && allStatus.size() != 0) {
                 List<GroupsLed> groupsLeds = new ArrayList<>();
-                //查询所有组
-                List<Group> groups = tFrtMapper.findAll();
-                groups.forEach(group -> {
-                    //根据组id查询灯杆信息
-                    List<TLightPole> tLightPoles = tLightPoleMapper.findByFrtId(group.getId());
-                    GroupsLed groupsLed = new GroupsLed();
-                    groupsLed.setGroupid(group.getId());
-                    groupsLed.setGroupname(group.getFrtName());
-                    List<Ledss> ledsses = new ArrayList<>();
-                    tLightPoles.forEach(tLightPole -> allStatus.forEach(TStatusDto -> {
-                        DeviceLoop deviceLoop = new DeviceLoop();
-                        deviceLoop.setDeviceDid(TStatusDto.getId());
-                        deviceLoop.setTypecode("5");
-                        //根据设备信息查询单个设备
-                        DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
-                        if(deviceLoop1 != null) {
-                            if (deviceLoop1.getLamppostid().equals(tLightPole.getLamppostid())) {
-                                Ledss ledss = new Ledss();
-                                ledss.setLamppostid(tLightPole.getLamppostid());
-                                ledss.setLamppostname(tLightPole.getLamppostname());
-                                try {
-                                    LcdConversionUtil.fatherToChild(TStatusDto, ledss);
-                                    ledsses.add(ledss);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                            groupsLed.setLeds(ledsses);
+                //查询根据type组
+                Group group = new Group();
+                group.setDeviceType(ConstantUtils.KYE_LED);
+                List<Group> groups = groupService.select(group);
+
+                groups.forEach(group1 -> {
+                    //根据组和设备的关联表数据
+                    GroupDevice groupDevice = new GroupDevice();
+                    groupDevice.setGroupId(group1.getId());
+                    List<GroupDevice> groupDevices = groupDeviceService.select(groupDevice);
+                    for (GroupDevice device : groupDevices) {
+                        //根据设备的id查询灯杆和设备关联表
+                        LightpoleDev lightpoleDev = new LightpoleDev();
+                        lightpoleDev.setDeviceId(device.getDeviceId().intValue());
+                        lightpoleDev.setDeviceType(ConstantUtils.KYE_LED);
+                        LightpoleDev lightpoleDev2 = lightpoleDevService.selectOne(lightpoleDev);
+                        if (lightpoleDev2 == null) {
+                            continue;
                         }
-                    }));
-                    if (groupsLed.getLeds().size() != 0){
-                        groupsLeds.add(groupsLed);
-                    }
-                });
+                        //组
+                        GroupsLed groupsLed = new GroupsLed();
+                        groupsLed.setGroupid(group1.getId().intValue());
+                        groupsLed.setGroupname(group1.getGroupName());
+
+                        List<Ledss> ledsses = new ArrayList<>();
+                        allStatus.forEach(tStatusDto -> {
+                            //根据设备id查询灯杆
+                            Lighpole lighpole = new Lighpole();
+                            lighpole.setLamppostid(lightpoleDev2.getLamppostid());
+                            Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+                            if (lighpole1 != null) {
+                                if (lighpole1.getLamppostid().equals(lightpoleDev2.getLamppostid())) {
+                                    Ledss ledss = new Ledss();
+                                    ledss.setLamppostid(lighpole1.getLamppostid());
+                                    ledss.setLamppostname(lighpole1.getLamppostname());
+                                    try {
+                                        LcdConversionUtil.fatherToChild(tStatusDto, ledss);
+                                        ledsses.add(ledss);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                groupsLed.setLeds(ledsses);
+                            }
+                            if (groupsLed.getLeds() != null) {  // TODO 判条件
+                                groupsLeds.add(groupsLed);
+                            }
+                    });
+                }
                 GroupsLedMsg groupsLedMsg = new GroupsLedMsg(groupsLeds);
                 messageVo.setMsg(groupsLedMsg);
                 send(code, JSON.toJSONString(messageVo));
@@ -1153,27 +665,11 @@ public class WebSocketServer {
                 send(code, JSON.toJSONString(messageVo));
 
                 log.info("led定时任务时间 : {}", messageVo.getTimestamp());
-            }
+            });
         }
     }
-
-    /**
-     * led设备统计信息
-     *
-     * @param allStatus led信息
-     * @return 统计信息
-     */
-    private StatisticsMsgVo ledStatis(List<TStatusDto> allStatus) throws ParseException {
-
-        List<String> dids = new ArrayList<>();
-        //取出所有的did
-        allStatus.forEach(tStatusDto -> dids.add(tStatusDto.getDid()));
-        //统计
-        StatisticsMsgVo statisticsMsgVo = equipStatis(dids, "4");
-        statisticsMsgVo.addNum(allStatus);
-        return statisticsMsgVo;
-
     }
+
     /**
      * frt环测首次建连
      */
@@ -1187,21 +683,25 @@ public class WebSocketServer {
             messageVo.setMsgcode(240001);
             //调用接口
             Optional.ofNullable(dataClientService).orElseGet(() -> dataClientService = ApplicationContextUtils.get(DataClientService.class));
-            Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
-            Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
             Optional.ofNullable(deviceClientService).orElseGet(() -> deviceClientService = ApplicationContextUtils.get(DeviceClientService.class));
+            Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevService.class));
+            Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
+
             dataAllStatus = dataClientService.findAllStatus();
             if (dataAllStatus != null && dataAllStatus.size() != 0) {
                 for (TDataDto status : dataAllStatus) {
                     //根据设备did查找灯杆id
-                    List<Integer> strings = deviceLoopMapper.findByLamppostId(status.getDid());
-                    if (strings != null && strings.size() > 0){
-                        //在根据灯杆id查询所有灯杆信息
-                        List<TLightPole> lists = tLightPoleMapper.findByTlightPole(strings);
-                        for (TLightPole list : lists) {
-                            status.setLamppostid(list.getLamppostid());
-                            status.setLamppostname(list.getLamppostname());
-                        }
+                    if (status.getDid() != null && status.getName()!=null){
+                        //根据did查询关联表灯杆id
+                        LightpoleDev lightpoleDev = new LightpoleDev();
+                        lightpoleDev.setDeviceId(Integer.valueOf(status.getDid()));
+                        LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
+                        //查询灯杆信息
+                        Lighpole lighpole = new Lighpole();
+                        lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+                        Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+                        status.setLamppostid(lighpole1.getLamppostid());
+                        status.setLamppostname(lighpole1.getLamppostname());
                     }
                 }
                 //所有环测的状态信息
@@ -1237,30 +737,40 @@ public class WebSocketServer {
             MessageVo messageVo = setMessageVo(modulecode);
             messageVo.setMsgcode(230015);
             Optional.ofNullable(tEventSponService).orElseGet(() -> tEventSponService = ApplicationContextUtils.get(TEventSponService.class));
-            Optional.ofNullable(deviceLoopMapper).orElseGet(() -> deviceLoopMapper = ApplicationContextUtils.get(DeviceLoopMapper.class));
-            Optional.ofNullable(tLightPoleMapper).orElseGet(() -> tLightPoleMapper = ApplicationContextUtils.get(TLightPoleMapper.class));
             Optional.ofNullable(deviceClientService).orElseGet(() -> deviceClientService = ApplicationContextUtils.get(DeviceClientService.class));
-            Optional.ofNullable(tFrtMapper).orElseGet(() -> tFrtMapper = ApplicationContextUtils.get(TFrtMapper.class));
+            Optional.ofNullable(groupService).orElseGet(() -> groupService = ApplicationContextUtils.get(GroupServiceImpl.class));
+            Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevServiceImpl.class));
+            Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
+
             bcstsList = tEventSponService.findByType();
             if (bcstsList != null && bcstsList.size() != 0) {
                 //查询所有组
-                List<Group> groups = tFrtMapper.findAll();
+                List<Group> groups = groupService.selectAll();
                 List<Spons> sponsList = new ArrayList<>();
                 groups.forEach(group -> {
-                    //根据组id查询灯杆信息
-                    List<TLightPole> tLightPoles = tLightPoleMapper.findByFrtId(group.getId());
-                    tLightPoles.forEach(tLightPole -> bcstsList.forEach(bcsts -> {
-                        DeviceLoop deviceLoop = new DeviceLoop();
-                        deviceLoop.setDeviceDid(bcsts.getDevicecode());
-                        deviceLoop.setTypecode("8");
-                        DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
-                        if(deviceLoop1 != null) {
-                            if (deviceLoop1.getLamppostid().equals(tLightPole.getLamppostid())) {
+                    //根据组设备类型查询灯杆信息
+                    LightpoleDev lightpoleDev = new LightpoleDev();
+                    lightpoleDev.setDeviceType(group.getDeviceType());
+                    List<LightpoleDev> lightpoleDevs = lightpoleDevService.select(lightpoleDev);
+
+                    GroupsLcd groupsLcd = new GroupsLcd();
+                    groupsLcd.setGroupid(group.getId().intValue());
+                    groupsLcd.setGroupname(group.getGroupName());
+
+                    List<Lcdss> lcdsses = new ArrayList<>();
+                    lightpoleDevs.forEach(lightpoleDev1 -> bcstsList.forEach(bcsts -> {
+                        //根据设备id查询灯杆
+                        Lighpole lighpole = new Lighpole();
+                        lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+                        Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+
+                        if(lighpole1 != null) {
+                            if (lighpole1.getLamppostid().equals(lightpoleDev1.getLamppostid())) {
                                 Spons spons = new Spons();
-                                spons.setGroupid(group.getId());
-                                spons.setGroupname(group.getFrtName());
-                                spons.setLamppostid(tLightPole.getLamppostid());
-                                spons.setLamppostname(tLightPole.getLamppostname());
+                                spons.setGroupid(group.getId().intValue());
+                                spons.setGroupname(group.getGroupName());
+                                spons.setLamppostid(lighpole1.getLamppostid());
+                                spons.setLamppostname(lighpole1.getLamppostname());
                                 try {
                                     LcdConversionUtil.fatherToChild(bcsts, spons);
                                     sponsList.add(spons);
@@ -1414,62 +924,6 @@ public class WebSocketServer {
         MqMessage mqMessageSelect = new MqMessage();
         mqMessageSelect.setExchange(equipment);
         return mqMessageService.selectOne(mqMessageSelect).getModulecode();
-    }
-
-    /**
-     * 提取重复代码
-     *
-     * @param dids     设备did
-     * @param typeCode 设备类型
-     * @return 统计信息
-     * @throws ParseException 时间格式化异常
-     */
-    private StatisticsMsgVo equipStatis(List<String> dids, String typeCode) throws ParseException {
-
-        Optional.ofNullable(deviceLoopService).orElseGet(() -> deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class));
-        //遍历通过did查出回路
-        DeviceLoop deviceLoopSelect = new DeviceLoop();
-        //本月
-        float currentmonth = 0;
-        //上月
-        float lastmonth = 0;
-        //本年
-        float thisyear = 0;
-        //当前
-        float activepowerNow = 0;
-        for (String did : dids) {
-            if (StringUtils.isNotBlank(did)) {
-                deviceLoopSelect.setDeviceDid(did);
-                deviceLoopSelect.setTypecode(typeCode);
-                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-                //查出单个设备的统计信息
-                if (deviceLoop != null) {
-                    StatisticsVo statisticsVoSelect = new StatisticsVo();
-                    statisticsVoSelect.setDid(String.valueOf(deviceLoop.getGatewayDid()));
-                    statisticsVoSelect.setLoop(deviceLoop.getLoop());
-                    StatisticsMsgVo statistics = Statistics.findStatistics(statisticsVoSelect);
-                    currentmonth = currentmonth + statistics.getCurrentmonth();
-                    lastmonth = lastmonth + statistics.getLastmonth();
-                    thisyear = thisyear + statistics.getThisyear();
-                    activepowerNow = activepowerNow + statistics.getActivepowerNow();
-                }
-            }
-        }
-        return new StatisticsMsgVo(currentmonth, lastmonth, thisyear, activepowerNow);
-    }
-    private DeviceLoop tLoopStateDtoIsNull(TLoopStateDto tLoopStateDto) {
-        //通过回路号查询这个是什么设备
-        Optional.ofNullable(deviceLoopService).orElseGet(() -> deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class));
-        DeviceLoop deviceLoopSelect = new DeviceLoop();
-        deviceLoopSelect.setLoop(tLoopStateDto.getLoop());
-        deviceLoopSelect.setGatewayDid(tLoopStateDto.getGatewayId());
-        DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-        if (deviceLoop != null) {
-            if (StringUtils.equals(deviceLoop.getTypecode(), "1") || StringUtils.equals(deviceLoop.getTypecode(), "2") || StringUtils.equals(deviceLoop.getTypecode(), "3")) {
-                return deviceLoop;
-            }
-        }
-        return null;
     }
 
     /**

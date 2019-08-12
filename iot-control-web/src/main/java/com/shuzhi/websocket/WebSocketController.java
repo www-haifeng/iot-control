@@ -3,11 +3,10 @@ package com.shuzhi.websocket;
 import com.alibaba.fastjson.JSON;
 import com.shuzhi.common.utils.WrapMapper;
 import com.shuzhi.common.utils.Wrapper;
-import com.shuzhi.config.entities.MsgCode;
 import com.shuzhi.config.service.MsgCodeService;
-import com.shuzhi.entity.DeviceLoop;
+import com.shuzhi.lightiotcomm.entities.TController;
+import com.shuzhi.lightiotcomm.service.LightIotCommServiceApi;
 import com.shuzhi.rabbitmq.RabbitProducer;
-import com.shuzhi.service.DeviceLoopService;
 import com.shuzhi.websocket.socketvo.MessageVo;
 import com.shuzhi.websocket.socketvo.Msg;
 import com.shuzhi.websocket.socketvo.SimpleProtocolVo;
@@ -32,16 +31,16 @@ public class WebSocketController {
 
     private final RabbitProducer rabbitProducer;
 
-    private final DeviceLoopService deviceLoopService;
-
     private final StringRedisTemplate redisTemplate;
 
     private final MsgCodeService msgCodeService;
 
-    public WebSocketController(RabbitProducer rabbitProducer, DeviceLoopService deviceLoopService, StringRedisTemplate redisTemplate, MsgCodeService msgCodeService) {
+    private final LightIotCommServiceApi lightIotCommServiceApi;
+
+    public WebSocketController(RabbitProducer rabbitProducer,LightIotCommServiceApi lightIotCommServiceApi, StringRedisTemplate redisTemplate, MsgCodeService msgCodeService) {
         this.rabbitProducer = rabbitProducer;
-        this.deviceLoopService = deviceLoopService;
         this.redisTemplate = redisTemplate;
+        this.lightIotCommServiceApi = lightIotCommServiceApi;
         this.msgCodeService = msgCodeService;
     }
 
@@ -80,10 +79,6 @@ public class WebSocketController {
         ledEquip(simpleProtocolVos, msg);
         //智联照明
         frtLight(simpleProtocolVos, msg,messageVo.getMsgcode());
-        //照明设备 照明设备没有重启操作和音量调节
-        if (msg.getCmdtype() != 10007) {
-            light(simpleProtocolVos, msg);
-        }
 
         return simpleProtocolVos;
     }
@@ -92,15 +87,13 @@ public class WebSocketController {
      */
     private void frtLight(List<SimpleProtocolVo> simpleProtocolVos, Msg msg,Integer msgcode) {
         Optional.ofNullable(msg.getLoops()).ifPresent(strings -> {
-            DeviceLoop deviceLoopSelect = new DeviceLoop();
+            //根据did查询网管id
             strings.forEach(s -> {
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
                 //通过设备id查出回路和网关id
-                deviceLoopSelect.setDeviceDid(s);
-                deviceLoopSelect.setTypecode(String.valueOf(msg.getLighttype()));
-                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
+                List<TController> controller = lightIotCommServiceApi.findController(s);
                 //网关id
-                simpleProtocolVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
+                simpleProtocolVo.setDid(String.valueOf(controller.get(0)));
                 HashMap<String, Object> data = new HashMap<>(3);
                 //msgId
                 simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
@@ -141,15 +134,11 @@ public class WebSocketController {
             });
         });
         Optional.ofNullable(msg.getLights()).ifPresent(strings ->  {
-            DeviceLoop deviceLoopSelect = new DeviceLoop();
             strings.forEach(s -> {
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
-                //通过设备id查出回路和网关id
-                deviceLoopSelect.setDeviceDid(s);
-                deviceLoopSelect.setTypecode(String.valueOf(msg.getLighttype()));
-                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
+                List<TController> controller = lightIotCommServiceApi.findController(s);
                 //网关id
-                simpleProtocolVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
+                simpleProtocolVo.setDid(String.valueOf(controller.get(0)));
                 HashMap<String, Object> data = new HashMap<>(3);
                 //msgId
                 simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
@@ -174,46 +163,6 @@ public class WebSocketController {
                 }
                 simpleProtocolVo.setData(data);
                 simpleProtocolVo.setCmdid(String.valueOf(msgcode));
-                simpleProtocolVos.add(simpleProtocolVo);
-            });
-        });
-
-
-    }
-
-    /**
-     * 照明设备封装简易协议 提取重复代码
-     *
-     * @param msg 报文数据
-     */
-    private void light(List<SimpleProtocolVo> simpleProtocolVos, Msg msg) {
-        Optional.ofNullable(msg.getLights()).ifPresent(lights -> {
-            log.info("接收到照明设备的命令 {} , {}", msg, new Date());
-            DeviceLoop deviceLoopSelect = new DeviceLoop();
-            lights.forEach(light -> {
-                SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
-                //通过设备id查出回路和网关id
-                deviceLoopSelect.setDeviceDid(light);
-                deviceLoopSelect.setTypecode(String.valueOf(msg.getLighttype()));
-                DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-                //网关id
-                simpleProtocolVo.setDid(String.valueOf(deviceLoop.getGatewayDid()));
-                HashMap<String, Object> data = new HashMap<>(3);
-                //msgId
-                simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
-
-                MsgCode thingsMsgKey = msgCodeService.findThingsMsgKey("light-shuncom-10002");
-                data.put("cmdid", thingsMsgKey.getMsgCode());
-                //回路
-                data.put("loop", deviceLoop.getLoop());
-                //是否闭合
-                if (msg.getCmdtype() == 1) {
-                    data.put("state", 0);
-                } else {
-                    data.put("state", 1);
-                }
-                simpleProtocolVo.setData(data);
-                simpleProtocolVo.setCmdid(thingsMsgKey.getMsgCode());
                 simpleProtocolVos.add(simpleProtocolVo);
             });
         });

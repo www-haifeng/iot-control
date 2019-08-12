@@ -18,5 +18,6 @@ public class GroupsLed {
      * 分组名称名称
      */
     private String groupname;
+
     private List<Ledss> Leds;
 }

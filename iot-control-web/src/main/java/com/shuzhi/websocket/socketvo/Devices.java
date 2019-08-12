@@ -1,11 +1,7 @@
 package com.shuzhi.websocket.socketvo;
 
-import com.shuzhi.entity.DeviceLoop;
 import com.shuzhi.lcd.entities.IotLcdStatusTwo;
 import com.shuzhi.led.entities.TStatusDto;
-import com.shuzhi.light.entities.TLoopStateDto;
-import com.shuzhi.service.DeviceLoopService;
-import com.shuzhi.websocket.ApplicationContextUtils;
 import lombok.Data;
 
 /**
@@ -82,26 +78,6 @@ public class Devices {
         this.timestamp = tStatusDto.getTimestamp();
     }
 
-    /**
-     * 照明设备
-     *
-     * @param loopStateDto 照明设备信息
-     */
-    public Devices(TLoopStateDto loopStateDto) {
-
-        //通过回路号查询这个是什么设备
-        DeviceLoopService deviceLoopService = ApplicationContextUtils.get(DeviceLoopService.class);
-        DeviceLoop deviceLoopSelect = new DeviceLoop();
-        deviceLoopSelect.setLoop(loopStateDto.getLoop());
-        deviceLoopSelect.setGatewayDid(loopStateDto.getGatewayId());
-        DeviceLoop deviceLoop = deviceLoopService.selectOne(deviceLoopSelect);
-
-        this.id = Long.valueOf(loopStateDto.getId());
-        this.type = Integer.valueOf(deviceLoop.getTypecode());
-        this.state = loopStateDto.getState();
-        this.onoff = this.state;
-        this.timestamp = loopStateDto.getTimestamp();
-    }
 
 }
 

@@ -17,11 +17,5 @@ public class StationsMsg {
 
     public StationsMsg(List<DevicesMsg> lights) {
 
-        lights.forEach(devicesMsg -> {
-
-            StationsVo stationsVo = new StationsVo(devicesMsg);
-            stations.add(stationsVo);
-
-        });
     }
 }
