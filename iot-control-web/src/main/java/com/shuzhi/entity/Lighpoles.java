@@ -13,6 +13,9 @@ import java.io.Serializable;
 @Data
 public class Lighpoles implements Serializable{
 
+    /**
+     * 主键id
+     */
     private Long id;
         
     /**
