@@ -2,6 +2,7 @@ package com.shuzhi.service.serviceimpl;
 
 import com.shuzhi.common.basemapper.BaseServiceImpl;
 import com.shuzhi.entity.Lighpole;
+import com.shuzhi.entity.Lighpoles;
 import com.shuzhi.mapper.LighpoleMapper;
 import com.shuzhi.service.LighpoleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class LighpoleServiceImpl extends BaseServiceImpl<Lighpole> implements Li
     @Autowired
     private LighpoleMapper lighpoleMapper;
     @Override
-    public List<Lighpole> findAlls() {
+    public List<Lighpoles> findAlls() {
         return lighpoleMapper.findAlls();
     }
 }

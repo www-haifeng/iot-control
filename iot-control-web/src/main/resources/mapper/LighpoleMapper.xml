@@ -11,7 +11,7 @@
         <result property="longitude" column="longitude" />
         <result property="latitude" column="latitude" />
     </resultMap>
-    <resultMap type="com.shuzhi.lightpole.entities.Lighpole" id="lighpolesMap">
+    <resultMap type="com.shuzhi.entity.Lighpoles" id="lighpolesMap">
         <result property="id" column="id" />
         <result property="lamppostid" column="lamppostid" />
         <result property="lamppostname" column="lamppostname" />

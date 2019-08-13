@@ -2,6 +2,7 @@ package com.shuzhi.service;
 
 import com.shuzhi.common.basemapper.BaseService;
 import com.shuzhi.entity.Lighpole;
+import com.shuzhi.entity.Lighpoles;
 
 import java.util.List;
 
@@ -13,5 +14,5 @@ import java.util.List;
 
 public interface LighpoleService extends BaseService<Lighpole> {
 
-    List<Lighpole> findAlls();
+    List<Lighpoles> findAlls();
 }
