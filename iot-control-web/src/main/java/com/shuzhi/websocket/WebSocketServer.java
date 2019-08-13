@@ -246,11 +246,11 @@ public class WebSocketServer {
                     //调用照明设备信息
                     light();
                     break;
-                case "frt":
+                case "environment":
                     //调用环测
                     frt();
                     break;
-                case "spon":
+                case "broadcast":
                     //广播
                     spon();
                     break;
