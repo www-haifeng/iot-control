@@ -2,11 +2,9 @@ package com.shuzhi.websocket;
 
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.shuzhi.entity.*;
-
 import com.shuzhi.frt.entities.OfflinesRingVo;
 import com.shuzhi.frt.entities.StatisticalPoleVo;
 import com.shuzhi.frt.entities.TDataDto;
@@ -692,10 +690,10 @@ public class WebSocketServer {
             if (dataAllStatus != null && dataAllStatus.size() != 0) {
                 for (TDataDto status : dataAllStatus) {
                     //根据设备did查找灯杆id
-                    if (status.getDid() != null && status.getName()!=null){
+                    if (status.getDevicecode() != null && status.getName()!=null){
                         //根据did查询关联表灯杆id
                         LightpoleDev lightpoleDev = new LightpoleDev();
-                        lightpoleDev.setDeviceId(status.getDid());
+                        lightpoleDev.setDeviceId(status.getDevicecode());
                         lightpoleDev.setDeviceType(5);
                         LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
                         if (lightpoleDev1 != null){
