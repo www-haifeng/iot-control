@@ -687,10 +687,10 @@ public class WebSocketServer {
             MessageVo messageVo = setMessageVo(modulecode);
             messageVo.setMsgcode(240001);
             //调用接口
-            Optional.ofNullable(dataClientService).orElseGet(() -> dataClientService = ApplicationContextUtils.get(DataClientService.class));
             Optional.ofNullable(deviceClientService).orElseGet(() -> deviceClientService = ApplicationContextUtils.get(DeviceClientService.class));
             Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevService.class));
             Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
+            Optional.ofNullable(dataClientService).orElseGet(() -> dataClientService = ApplicationContextUtils.get(DataClientService.class));
 
             dataAllStatus = dataClientService.findAllStatus();
             if (dataAllStatus != null && dataAllStatus.size() != 0) {
@@ -700,13 +700,16 @@ public class WebSocketServer {
                         //根据did查询关联表灯杆id
                         LightpoleDev lightpoleDev = new LightpoleDev();
                         lightpoleDev.setDeviceId(Integer.valueOf(status.getDid()));
+                        lightpoleDev.setDeviceType(5);
                         LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
-                        //查询灯杆信息
-                        Lighpole lighpole = new Lighpole();
-                        lighpole.setLamppostid(lightpoleDev1.getLamppostid());
-                        Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
-                        status.setLamppostid(lighpole1.getLamppostid());
-                        status.setLamppostname(lighpole1.getLamppostname());
+                        if (lightpoleDev1 != null){
+                            //查询灯杆信息
+                            Lighpole lighpole = new Lighpole();
+                            lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+                            Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+                            status.setLamppostid(lighpole1.getLamppostid());
+                            status.setLamppostname(lighpole1.getLamppostname());
+                        }
                     }
                 }
                 //所有环测的状态信息
