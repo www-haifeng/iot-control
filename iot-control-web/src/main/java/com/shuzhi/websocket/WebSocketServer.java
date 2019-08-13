@@ -633,11 +633,13 @@ public class WebSocketServer {
                                 }
                                 groupsLed.setLeds(ledsses);
                             }
-                            if (groupsLed.getLeds() != null) {  // TODO 判条件
+                            if (groupsLed.getLeds() != null) {
                                 groupsLeds.add(groupsLed);
                             }
                     });
                 }
+                });
+
                 GroupsLedMsg groupsLedMsg = new GroupsLedMsg(groupsLeds);
                 messageVo.setMsg(groupsLedMsg);
                     try {
@@ -645,15 +647,6 @@ public class WebSocketServer {
                     } catch (JsonProcessingException e) {
                         e.printStackTrace();
                     }
-
-                    allStatus.forEach(tStatusDto -> {
-                    tStatusDto.setVolume(null);
-                    tStatusDto.setLight(null);
-                });
-                Leds leds2 = new Leds(allStatus);
-                messageVo.setMsg(leds2);
-                messageVo.setMsgcode(230012);
-                send(code, JSON.toJSONString(messageVo));
 
                 //推送统计信息
                 LightMsgVo lightMsgVo = new LightMsgVo();
@@ -670,9 +663,8 @@ public class WebSocketServer {
                 send(code, JSON.toJSONString(messageVo));
 
                 log.info("led定时任务时间 : {}", messageVo.getTimestamp());
-            });
+            }
         }
-    }
     }
 
     /**
