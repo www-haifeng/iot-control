@@ -619,7 +619,6 @@ public class WebSocketServer {
                             lighpole.setLamppostid(lightpoleDev2.getLamppostid());
                             Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
                             if (lighpole1 != null) {
-                                if (lighpole1.getLamppostid().equals(lightpoleDev2.getLamppostid())) {
                                     Ledss ledss = new Ledss();
                                     ledss.setLamppostid(lighpole1.getLamppostid());
                                     ledss.setLamppostname(lighpole1.getLamppostname());
@@ -629,7 +628,7 @@ public class WebSocketServer {
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
-                                }
+
                                 groupsLed.setLeds(ledsses);
                             }
                         }
