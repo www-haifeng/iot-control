@@ -288,176 +288,192 @@ public class WebSocketServer {
      */
     @Scheduled(cron = "${send.light-cron}")
     public void light() throws ParseException, JsonProcessingException {
-//
-//        Integer modulecode = getModuleCode("light");
-//        String code = String.valueOf(modulecode);
-//        if (isOnClose(code)) {
-//            MessageVo messageVo = setMessageVo(modulecode);
-//            messageVo.setMsgcode(220001);
-//            //调用接口 获取当前照明状态
-//            Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
-//            Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevService.class));
-//            Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
-//
-//            loopStatus = loopStatusServiceApi.findLoopStatus();
-//            List<Loops> loops = new ArrayList<>();
-//            if (loopStatus != null && loopStatus.size() != 0) {
-//                //所有单灯信息
-//                loopStatus.forEach(tLoopStateDto -> {
-//                    Loops loops1 = new Loops();
-//                    //设备的did去查询灯杆对应设备
-//                    LightpoleDev lightpoleDev = new LightpoleDev();
-//                    lightpoleDev.setDeviceId(tLoopStateDto.getId());
-//                    LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
-//                    //根据灯灯杆id查询灯杆信息
-//                    Lighpole lighpole = new Lighpole();
-//                    lighpole.setLamppostid(lightpoleDev1.getLamppostid());
-//                    Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
-//
-//                        List<Lights> light = new ArrayList<>();
-//                        List<Lampposts> lamppostsList = new ArrayList<>();
-//                        loops1.setLoopid(tLoopStateDto.getId());
-//                        loops1.setLoopnum(tLoopStateDto.getLoop());
-//                        loops1.setLoopname(tLoopStateDto.getName());
-//                        loops1.setOnoff(tLoopStateDto.getState());
-//                        loops1.setState(tLoopStateDto.getState());
-//
-//                       /* DeviceLoop deviceLoop = new DeviceLoop();
-//                        deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
-//                        List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
-//                        for (DeviceLoop loop : deviceLoops) {
-//                            Lights lights = new Lights();
-//                            Lampposts lampposts = new Lampposts();
-//                            lampposts.setLamppostid(lighpole1.getLamppostid());
-//                            lampposts.setLamppostname(lighpole1.getLamppostname());
-//
-//                            deviceLoop.setLoop(loop.getLoop());
-//                            deviceLoop.setGatewayDid(loop.getGatewayDid());
-//                            DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
-//                            lights.setName(deviceLoop1.getDeviceName());
-//                            lights.setState(tLoopStateDto.getState());
-//                            lights.setOnoff(tLoopStateDto.getState());
-//                            lights.setId(deviceLoop1.getId());
-//                            light.add(lights);
-//                            lampposts.setLights(light);
-//                            lamppostsList.add(lampposts);*
-//                        /*loops1.setLampposts(lamppostsList);
-//                        loops.add(loops1);*/
-//                });
-//                LightMsg lightMsg = new LightMsg(loops);
-//                messageVo.setMsg(lightMsg);
+
+        Integer modulecode = getModuleCode("light");
+        String code = String.valueOf(modulecode);
+        if (isOnClose(code)) {
+            MessageVo messageVo = setMessageVo(modulecode);
+            messageVo.setMsgcode(220001);
+            //调用接口 获取当前照明状态
+            Optional.ofNullable(loopStatusServiceApi).orElseGet(() -> loopStatusServiceApi = ApplicationContextUtils.get(LoopStatusServiceApi.class));
+            Optional.ofNullable(lightpoleDevService).orElseGet(() -> lightpoleDevService = ApplicationContextUtils.get(LightpoleDevService.class));
+            Optional.ofNullable(lighpoleService).orElseGet(() -> lighpoleService = ApplicationContextUtils.get(LighpoleServiceImpl.class));
+            Optional.ofNullable(lightIotCommServiceApi).orElseGet(() -> lightIotCommServiceApi = ApplicationContextUtils.get(LightIotCommServiceApi.class));
+
+            List<TGateway> tGateways = lightIotCommServiceApi.gatewayLocationInof();
+            controllerStatus = lightIotCommServiceApi.findControllerStatus();
+            //查询回路通过breakerID 查询 LoopRedis 得到 回路 在线离线状态
+            loopStatus = lightIotCommServiceApi.findLoopStatus();
+            loopOffline = lightIotCommServiceApi.findLoopOffline();
+            List<Loops> loops = new ArrayList<>();
+
+            if (loopStatus != null && loopStatus.size() != 0) {
+                //所有单灯信息
+                loopStatus.forEach(tLoopStateDto -> {
+                    Loops loops1 = new Loops();
+                    //设备的did去查询灯杆对应设备
+                    LightpoleDev lightpoleDev = new LightpoleDev();
+                    lightpoleDev.setDeviceId(Integer.parseInt(tLoopStateDto.getId().toString()));
+                    lightpoleDev.setDeviceType(7);
+                    LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
+                    //根据灯灯杆id查询灯杆信息
+                    Lighpole lighpole = new Lighpole();
+                    System.out.println(lightpoleDev);
+                    lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+
+                    Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+
+                    List<Lights> light = new ArrayList<>();
+                    List<Lampposts> lamppostsList = new ArrayList<>();
+
+                    loops1.setLoopid(tLoopStateDto.getId().intValue());
+                    loops1.setLoopnum(tLoopStateDto.getBreakerID());
+                    loops1.setLoopname(tLoopStateDto.getBreakerName());
+
+                    // 根据loopRedis.getLoopid() == tLoopStateDto.getBreakerID() 获取 在线和离线状态
+                    loopOffline.forEach(loopRedis -> {
+                        if (loopRedis.getLoopid() == tLoopStateDto.getBreakerID()) {
+                            loops1.setOnoff(loopRedis.getOnoff());
+                            loops1.setState(tLoopStateDto.getStatus());
+                        }
+                    });
+                    //获取灯杆信息
+                    Lights lights = new Lights();
+                    Lampposts lampposts = new Lampposts();
+                    lampposts.setLamppostid(lighpole1.getLamppostid());
+                    lampposts.setLamppostname(lighpole1.getLamppostname());
+
+                    controllerStatus.forEach(controllerStatus1 -> {
+                        lights.setName(controllerStatus1.getName());
+                        lights.setState(controllerStatus1.getOnoff());
+                        lights.setOnoff(controllerStatus1.getOnline());// TODO  修改在线状态
+                        /*if (controllerStatus1.getOnline().equals("N")) { // TODO  修改在线状态
+                            lights.setOnoff(0);
+                        } else {
+                            lights.setOnoff(1);
+                        }*/
+                        lights.setId(controllerStatus1.getId().intValue());
+                        light.add(lights);
+                        lampposts.setLights(light);
+                        lamppostsList.add(lampposts);
+                    });
+                    loops1.setLampposts(lamppostsList);
+                    loops.add(loops1);
+                });
+                LightMsg lightMsg = new LightMsg(loops);
+                messageVo.setMsg(lightMsg);
 //                send(code, JSON.toJSONString(messageVo, SerializerFeature.DisableCircularReferenceDetect));
-//                // send(code,objectMapper.writeValueAsString(messageVo));
-//
-//                //所有单灯信息（分组）
-//                List<Groups> groups = new ArrayList<>();
-//                List<Integer> count1 = new ArrayList<>();
-//                if (loopStatus != null && loopStatus.size() != 0) {
-//                    loopStatus.forEach(tLoopStateDto -> {
-//                        //设备的did去查询灯杆对应设备
-//                        LightpoleDev lightpoleDev = new LightpoleDev();
-//                        lightpoleDev.setDeviceId(tLoopStateDto.getId());
-//                        LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
-//                        //根据灯灯杆id查询灯杆信息
-//                        Lighpole lighpole = new Lighpole();
-//                        lighpole.setLamppostid(lightpoleDev1.getLamppostid());
-//                        Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
-//                            List<Lights> light1 = new ArrayList<>();
-//                            List<Lampposts> lamppostsList1 = new ArrayList<>();
-//                            //根据设备id查询
-//                            GroupDevice groupDevice = new GroupDevice();
-//                            groupDevice.setDeviceId(tLoopStateDto.getId().longValue());
-//                            GroupDevice groups2 = groupDeviceService.selectOne(groupDevice);
-//                            //根据关联表组id 查询
-//                            Group group = new Group();
-//                            group.setId(groups2.getGroupId());
-//                            Group group1 = groupService.selectOne(group);
-//                            Groups groups1 = new Groups();
-//                            groups1.setGroupid(group1.getId().intValue());
-//                            groups1.setGroupname(group1.getGroupName());
-//
-//                           /* DeviceLoop deviceLoop = new DeviceLoop();
-//                            deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
-//                            List<DeviceLoop> deviceLoops = deviceLoopMapper.select(deviceLoop);
-//                            for (DeviceLoop loop : deviceLoops) {
-//                                Lights lights1 = new Lights();
-//                                Lampposts lampposts1 = new Lampposts();
-//                                lampposts1.setLamppostid(lighpole1.getLamppostid());
-//                                lampposts1.setLamppostname(lighpole1.getLamppostname());
-//
-//                                deviceLoop.setLoop(loop.getLoop());
-//                                deviceLoop.setGatewayDid(loop.getGatewayDid());
-//                                DeviceLoop deviceLoop1 = deviceLoopMapper.selectOne(deviceLoop);
-//                                lights1.setName(deviceLoop1.getDeviceName());
-//                                lights1.setState(tLoopStateDto.getState());
-//                                lights1.setOnoff(tLoopStateDto.getState());
-//                                lights1.setId(deviceLoop1.getId());
-//                                light1.add(lights1);
-//                                lampposts1.setLights(light1);
-//                                lamppostsList1.add(lampposts1);
-//                            }
-//                            groups1.setLampposts(lamppostsList1);
-//                            groups.add(groups1);*/
-//                    });
-//                }
-//                LightsMsg lightsMsg = new LightsMsg(groups);
-//                messageVo.setMsg(lightsMsg);
-//                messageVo.setMsgcode(220002);
-//                send(code,objectMapper.writeValueAsString(messageVo));
-//
-//                //推送统计信息
-//                StatisticsMsgsVo statisticsMsgsVo = new StatisticsMsgsVo();
-//                statisticsMsgsVo.addLightNum(loopStatus);
-//                messageVo.setMsg(statisticsMsgsVo);
-//                messageVo.setMsgcode(220003);
-//                send(code,objectMapper.writeValueAsString(messageVo));
-//
-//                //推送离线设备信息
-//                messageVo.setMsgcode(220004);
-//                OfflineMsg offlineMsg = new OfflineMsg();
-//                offlineMsg.offlineLightMsg(loopStatus);
-//                messageVo.setMsg(offlineMsg);
-//                send(code,objectMapper.writeValueAsString(messageVo));
-//
-//                //所有集中控制器信息
-//                List<Controllers> controllersList = new ArrayList<>();
-//                loopStatus.forEach(tLoopStateDto -> {
-//                   /* DeviceLoop deviceLoop = new DeviceLoop();
-//                    deviceLoop.setGatewayDid(tLoopStateDto.getGatewayId());
-//                    deviceLoop.setTypecode("7");
-//                    //根据设备信息查询单个设备
-//                    List<DeviceLoop> select = deviceLoopMapper.select(deviceLoop);
-//                    Set<DeviceLoop> deviceLoops = new HashSet<>(select);
-//                    for (DeviceLoop loop : deviceLoops) {
-//                        List<Loops> loops1 = new ArrayList<>();
-//                        Controllers controllers = new Controllers();
-//                        controllers.setControllerid(loop.getGatewayDid());
-//                        controllers.setControllername(loop.getDeviceName());
-//                        controllers.setControllernum(loop.getGatewayDid());
-//                        List<GatewayRedis> gatewayRedis = loopStatusServiceApi.findgatewayState();
-//                        for (GatewayRedis gatewayRedi : gatewayRedis) {
-//                            if (loop.getGatewayDid().equals(gatewayRedi.getGatewayId())){
-//                                controllers.setState(gatewayRedi.getOnoff());
-//                            } else {
-//                                controllers.setState(0);
-//                            }
-//                        }
-//                        Loops loops2 = new Loops();
-//                        loops2.setLoopid(tLoopStateDto.getId());
-//                        loops2.setLoopnum(tLoopStateDto.getLoop());
-//                        loops2.setLoopname(tLoopStateDto.getName());
-//                        loops2.setOnoff(tLoopStateDto.getState());
-//                        loops1.add(loops2);
-//                        controllers.setLoopsList(loops1);
-//                        controllersList.add(controllers);
-//                    }*/
-//                });
-//                messageVo.setMsgcode(220005);
-//                messageVo.setMsg(controllersList);
-//                send(code,objectMapper.writeValueAsString(messageVo));
-//                log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
-//            }
-//        }
+                send(code, objectMapper.writeValueAsString(messageVo));
+
+                //所有单灯信息（分组）
+                List<Groups> groups = new ArrayList<>();
+                Group group2 = new Group();
+                group2.setDeviceType(1);
+                List<Group> groupList = groupService.select(group2);
+                if (!groupList.isEmpty()) {
+                    groupList.forEach(group -> {
+                        Groups groups1 = new Groups();
+                        groups1.setGroupid(group.getId().intValue());
+                        groups1.setGroupname(group.getGroupName());
+                        //灯杆数组
+                        List<Lampposts> lamppostsList = new ArrayList<>();
+                        //根据组id 查询关联表的设备id
+                        GroupDevice groupDevice = new GroupDevice();
+                        groupDevice.setGroupId(group.getId());
+                        List<GroupDevice> groupDeviceList = groupDeviceService.select(groupDevice);
+                        //遍历查询灯杆信息
+                        groupDeviceList.forEach(groupDevice1 -> {
+                            LightpoleDev lightpoleDev = new LightpoleDev();
+                            lightpoleDev.setDeviceId(groupDevice1.getDeviceId());
+                            lightpoleDev.setDeviceType(1);
+                            LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
+                            //根据设备和灯杆关系表查询灯杆信息
+                            Lighpole lighpole = new Lighpole();
+                            lighpole.setLamppostid(lightpoleDev1.getLamppostid());
+                            Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+                            //set灯杆信息
+                            Lampposts lampposts = new Lampposts();
+                            lampposts.setLamppostid(lighpole1.getLamppostid());
+                            lampposts.setLamppostname(lighpole1.getLamppostname());
+                            // 遍历set单灯信息
+                            List<Lights> light = new ArrayList<>();
+                            controllerStatus.forEach(controllerStatus1 -> {
+                                Lights lights = new Lights();
+                                lights.setId(controllerStatus1.getId().intValue());
+                                lights.setName(controllerStatus1.getName());
+                                lights.setOnoff(controllerStatus1.getOnline());// TODO  修改在线状态
+                                /*if (controllerStatus1.getComm().equals("N")) {     // TODO  修改在线状态                           /*if (controllerStatus1.getComm().equals("N")) {
+                                    lights.setOnoff(0);
+                                } else {
+                                    lights.setOnoff(1);
+                                }*/
+                                lights.setState(controllerStatus1.getOnoff());
+                                light.add(lights);
+                            });
+                            lampposts.setLights(light);
+                            lamppostsList.add(lampposts);
+                        });
+                        groups1.setLampposts(lamppostsList);
+                        groups.add(groups1);
+                    });
+                }
+                LightsMsg lightsMsg = new LightsMsg(groups);
+                messageVo.setMsg(lightsMsg);
+                messageVo.setMsgcode(220002);
+                send(code, objectMapper.writeValueAsString(messageVo));
+
+                //推送统计信息
+                StatisticsMsgsVo statisticsMsgsVo = new StatisticsMsgsVo();
+                statisticsMsgsVo.addLightNum(controllerStatus);
+                messageVo.setMsg(statisticsMsgsVo);
+                messageVo.setMsgcode(220003);
+                send(code, objectMapper.writeValueAsString(messageVo));
+
+                //推送离线设备信息
+                messageVo.setMsgcode(220004);
+                OfflineMsg offlineMsg = new OfflineMsg();
+                offlineMsg.offlineLightMsg(controllerStatus);
+                messageVo.setMsg(offlineMsg);
+                send(code, objectMapper.writeValueAsString(messageVo));
+
+                //所有集中控制器信息
+                findGatewayOffline = lightIotCommServiceApi.findGatewayOffline();
+                Group group = new Group();
+                group.setDeviceType(1);
+                List<Group> groupList1 = groupService.select(group);
+                List<Controllers> controllersList = new ArrayList<>();
+                if (groupList1.isEmpty()) {
+                    groupList.forEach(groupDevice -> {
+                        findGatewayOffline.forEach(findGatewayOfflines -> {
+                            //所有集中控制器信息
+                            Controllers controllers = new Controllers();
+                            controllers.setControllerid(findGatewayOfflines.getGatewayId().toString());
+                            controllers.setControllername(groupDevice.getGroupName());
+                            controllers.setControllernum(findGatewayOfflines.getDid());
+                            controllers.setState(findGatewayOfflines.getOnline());
+                            //set回路数据
+                            //所有单灯信息
+                            List<Loops> list = new ArrayList<Loops>();
+                            loopStatus.forEach(tLoopStateDto -> {
+                                Loops loops1 = new Loops();
+                                if (tLoopStateDto.getCcuUid().equals(findGatewayOfflines.getDid())) {
+                                    loops1.setLoopid(tLoopStateDto.getId().intValue());
+                                    loops1.setLoopname(tLoopStateDto.getBreakerName());
+                                    loops1.setLoopnum(tLoopStateDto.getBreakerID());
+                                    loops1.setOnoff(tLoopStateDto.getStatus());
+                                }
+                                list.add(loops1);
+                            });
+                            controllers.setLoopsList(list);
+                        });
+                    });
+                }
+                messageVo.setMsgcode(220005);
+                messageVo.setMsg(controllersList);
+                send(code, objectMapper.writeValueAsString(messageVo));
+                log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
+            }
+        }
     }
 
     /**
@@ -501,7 +517,7 @@ public class WebSocketServer {
                         lighpole.setLamppostid(lightpoleDev1.getLamppostid());
                         Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
 
-                        if(lighpole1 != null) {
+                        if (lighpole1 != null) {
                             if (lighpole1.getLamppostid().equals(lightpoleDev1.getLamppostid())) {
                                 Lcdss lcdss = new Lcdss();
                                 lcdss.setLamppostid(lighpole1.getLamppostid());
@@ -516,13 +532,13 @@ public class WebSocketServer {
                             groupsLcd.setLcds(lcdsses);
                         }
                     }));
-                    if (groupsLcd.getLcds().size() != 0){
+                    if (groupsLcd.getLcds().size() != 0) {
                         groupsLcds.add(groupsLcd);
                     }
                 });
                 GroupsLcdMsg groupsLcdMsg = new GroupsLcdMsg(groupsLcds);
                 messageVo.setMsg(groupsLcdMsg);
-                send(code,objectMapper.writeValueAsString(messageVo));
+                send(code, objectMapper.writeValueAsString(messageVo));
 
                 //推送统计信息
                 LightMsgVo lightMsgVo = new LightMsgVo();
@@ -575,7 +591,7 @@ public class WebSocketServer {
      * led首次连接信息 也需要定时向前台推送
      */
     @Scheduled(cron = "${send.led-cron}")
-    public void led() throws ParseException ,JsonProcessingException {
+    public void led() throws ParseException, JsonProcessingException {
         //查出led的 moduleCode
         Integer modulecode = getModuleCode("led");
         String code = String.valueOf(modulecode);
@@ -618,29 +634,29 @@ public class WebSocketServer {
                             continue;
                         }
                         allStatus.forEach(tStatusDto -> {
-                            if(tStatusDto.getId().equals(device.getDeviceId())){
-                            //根据设备id查询灯杆
-                            Lighpole lighpole = new Lighpole();
-                            lighpole.setLamppostid(lightpoleDev2.getLamppostid());
-                            Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
-                            if (lighpole1 != null) {
-                                if (lighpole1.getLamppostid().equals(lightpoleDev2.getLamppostid())) {
-                                    Ledss ledss = new Ledss();
-                                    ledss.setLamppostid(lighpole1.getLamppostid());
-                                    ledss.setLamppostname(lighpole1.getLamppostname());
-                                    try {
-                                        LcdConversionUtil.fatherToChild(tStatusDto, ledss);
-                                        ledsses.add(ledss);
-                                    } catch (Exception e) {
-                                        e.printStackTrace();
+                            if (tStatusDto.getId().equals(device.getDeviceId())) {
+                                //根据设备id查询灯杆
+                                Lighpole lighpole = new Lighpole();
+                                lighpole.setLamppostid(lightpoleDev2.getLamppostid());
+                                Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+                                if (lighpole1 != null) {
+                                    if (lighpole1.getLamppostid().equals(lightpoleDev2.getLamppostid())) {
+                                        Ledss ledss = new Ledss();
+                                        ledss.setLamppostid(lighpole1.getLamppostid());
+                                        ledss.setLamppostname(lighpole1.getLamppostname());
+                                        try {
+                                            LcdConversionUtil.fatherToChild(tStatusDto, ledss);
+                                            ledsses.add(ledss);
+                                        } catch (Exception e) {
+                                            e.printStackTrace();
+                                        }
                                     }
+                                    groupsLed.setLeds(ledsses);
                                 }
-                                groupsLed.setLeds(ledsses);
                             }
-                        }
-                    });
+                        });
 
-                }
+                    }
                     if (groupsLed.getLeds() != null) {
                         groupsLeds.add(groupsLed);
                     }
@@ -695,13 +711,13 @@ public class WebSocketServer {
             if (dataAllStatus != null && dataAllStatus.size() != 0) {
                 for (TDataDto status : dataAllStatus) {
                     //根据设备did查找灯杆id
-                    if (status.getDevicecode() != null && status.getName()!=null){
+                    if (status.getDevicecode() != null && status.getName() != null) {
                         //根据did查询关联表灯杆id
                         LightpoleDev lightpoleDev = new LightpoleDev();
-                        lightpoleDev.setDeviceId(status.getDevicecode());
+                        lightpoleDev.setDeviceId(status.getId());
                         lightpoleDev.setDeviceType(5);
                         LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
-                        if (lightpoleDev1 != null){
+                        if (lightpoleDev1 != null) {
                             //查询灯杆信息
                             Lighpole lighpole = new Lighpole();
                             lighpole.setLamppostid(lightpoleDev1.getLamppostid());
@@ -732,6 +748,7 @@ public class WebSocketServer {
             }
         }
     }
+
     /**
      * spon广播首次建连
      */
@@ -771,7 +788,7 @@ public class WebSocketServer {
                         lighpole.setLamppostid(lightpoleDev1.getLamppostid());
                         Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
 
-                        if(lighpole1 != null) {
+                        if (lighpole1 != null) {
                             if (lighpole1.getLamppostid().equals(lightpoleDev1.getLamppostid())) {
                                 Spons spons = new Spons();
                                 spons.setGroupid(group.getId().intValue());
@@ -806,6 +823,7 @@ public class WebSocketServer {
             }
         }
     }
+
     /**
      * 关闭连接的方法
      *

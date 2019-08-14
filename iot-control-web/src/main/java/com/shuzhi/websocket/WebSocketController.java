@@ -4,12 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.shuzhi.common.utils.WrapMapper;
 import com.shuzhi.common.utils.Wrapper;
 import com.shuzhi.config.service.MsgCodeService;
-import com.shuzhi.frt.service.DataClientService;
-import com.shuzhi.lcd.entities.IotHobo;
-import com.shuzhi.lcd.service.LcdClientService;
-import com.shuzhi.led.entities.TLed;
-import com.shuzhi.led.service.LedClientService;
-import com.shuzhi.led.service.TEventLedService;
 import com.shuzhi.lightiotcomm.entities.TController;
 import com.shuzhi.lightiotcomm.service.LightIotCommServiceApi;
 import com.shuzhi.rabbitmq.RabbitProducer;
@@ -43,19 +37,11 @@ public class WebSocketController {
 
     private final LightIotCommServiceApi lightIotCommServiceApi;
 
-    private final LcdClientService lcdClientService;
-    private final LedClientService ledClientService;
-    private final DataClientService dataClientService;
-
-    public WebSocketController(RabbitProducer rabbitProducer,LightIotCommServiceApi lightIotCommServiceApi, StringRedisTemplate redisTemplate, MsgCodeService msgCodeService, LcdClientService lcdClientService,
-    LedClientService ledClientService,DataClientService dataClientService) {
+    public WebSocketController(RabbitProducer rabbitProducer,LightIotCommServiceApi lightIotCommServiceApi, StringRedisTemplate redisTemplate, MsgCodeService msgCodeService) {
         this.rabbitProducer = rabbitProducer;
         this.redisTemplate = redisTemplate;
         this.lightIotCommServiceApi = lightIotCommServiceApi;
         this.msgCodeService = msgCodeService;
-        this.lcdClientService = lcdClientService;
-        this.ledClientService = ledClientService;
-        this.dataClientService = dataClientService;
     }
 
     /**
@@ -104,8 +90,6 @@ public class WebSocketController {
             //根据did查询网管id
             strings.forEach(s -> {
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
-
-
                 //通过设备id查出回路和网关id
                 List<TController> controller = lightIotCommServiceApi.findController(s);
                 //网关id
@@ -195,9 +179,8 @@ public class WebSocketController {
             //拼装数据
             leds.forEach(led -> {
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
-                TLed tLed = ledClientService.findById(Integer.parseInt(led));
                 //设备编号
-                simpleProtocolVo.setDid(tLed.getDid());
+                simpleProtocolVo.setDid(led);
                 //msgId
                 simpleProtocolVo.setMsgid(UUID.randomUUID().toString());
                 //亮度和音量 重启操作没有亮度和音量
@@ -250,10 +233,9 @@ public class WebSocketController {
             log.info("接收到lcd设备的命令 {} , {}", msg, new Date());
             //拼装数据
             lcds.forEach(lcd -> {
-                IotHobo iotHobo = lcdClientService.findById(Integer.parseInt(lcd));
                 SimpleProtocolVo simpleProtocolVo = new SimpleProtocolVo();
                 //设备编号
-                simpleProtocolVo.setDid(iotHobo.getDid());
+                simpleProtocolVo.setDid(lcd);
                 HashMap<String, Object> hashMap = new HashMap<>(1);
                 hashMap.put("cids", lcd);
                 simpleProtocolVo.setData(hashMap);
