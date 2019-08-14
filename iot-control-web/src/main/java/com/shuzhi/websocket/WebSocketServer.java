@@ -370,7 +370,7 @@ public class WebSocketServer {
                 //所有单灯信息（分组）
                 List<Groups> groups = new ArrayList<>();
                 Group group2 = new Group();
-                group2.setDeviceType(1);
+                group2.setDeviceType(7);
                 List<Group> groupList = groupService.select(group2);
                 if (!groupList.isEmpty()) {
                     groupList.forEach(group -> {
@@ -379,38 +379,37 @@ public class WebSocketServer {
                         groups1.setGroupname(group.getGroupName());
                         //灯杆数组
                         List<Lampposts> lamppostsList = new ArrayList<>();
+                        List<Lighpoles>  LighpolesLists = lighpoleService.findAlls();
                         //根据组id 查询关联表的设备id
-                        GroupDevice groupDevice = new GroupDevice();
-                        groupDevice.setGroupId(group.getId());
-                        List<GroupDevice> groupDeviceList = groupDeviceService.select(groupDevice);
+//                        LightpoleDev lightpoleDev = new LightpoleDev();
+//                        lightpoleDev.setDeviceType(7);
+//                        List<LightpoleDev> lightpoleDevList = lightpoleDevService.select(lightpoleDev);
                         //遍历查询灯杆信息
-                        groupDeviceList.forEach(groupDevice1 -> {
-                            LightpoleDev lightpoleDev = new LightpoleDev();
-                            lightpoleDev.setDeviceId(groupDevice1.getDeviceId());
-                            lightpoleDev.setDeviceType(7);
-                            LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
+                           LighpolesLists.forEach(lighpoles -> {
                             //根据设备和灯杆关系表查询灯杆信息
                             Lighpole lighpole = new Lighpole();
-                            lighpole.setLamppostid(lightpoleDev1.getLamppostid());
-                            Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
+                            lighpole.setLamppostid(lighpoles.getLamppostid());
+                           // Lighpole lighpole1 = lighpoleService.selectOne(lighpole);
                             //set灯杆信息
                             Lampposts lampposts = new Lampposts();
-                            lampposts.setLamppostid(lighpole1.getLamppostid());
-                            lampposts.setLamppostname(lighpole1.getLamppostname());
+                            lampposts.setLamppostid(lighpoles.getLamppostid());
+                            lampposts.setLamppostname(lighpoles.getLamppostname());
                             // 遍历set单灯信息
                             List<Lights> light = new ArrayList<>();
                             controllerStatus.forEach(controllerStatus1 -> {
-                                Lights lights = new Lights();
-                                lights.setId(controllerStatus1.getId().intValue());
-                                lights.setName(controllerStatus1.getName());
-                                lights.setOnoff(controllerStatus1.getOnline());// TODO  修改在线状态
+                                if(controllerStatus1.getId() == Long.parseLong(lighpoles.getId().toString())) {
+                                    Lights lights = new Lights();
+                                    lights.setId(controllerStatus1.getId().intValue());
+                                    lights.setName(controllerStatus1.getName());
+                                    lights.setOnoff(controllerStatus1.getOnline());// TODO  修改在线状态
                                 /*if (controllerStatus1.getComm().equals("N")) {     // TODO  修改在线状态                           /*if (controllerStatus1.getComm().equals("N")) {
                                     lights.setOnoff(0);
                                 } else {
                                     lights.setOnoff(1);
                                 }*/
-                                lights.setState(controllerStatus1.getOnoff());
-                                light.add(lights);
+                                    lights.setState(controllerStatus1.getOnoff());
+                                    light.add(lights);
+                                }
                             });
                             lampposts.setLights(light);
                             lamppostsList.add(lampposts);
@@ -422,7 +421,7 @@ public class WebSocketServer {
                 LightsMsg lightsMsg = new LightsMsg(groups);
                 messageVo.setMsg(lightsMsg);
                 messageVo.setMsgcode(220002);
-                //send(code, objectMapper.writeValueAsString(messageVo));
+                send(code, objectMapper.writeValueAsString(messageVo));
 
                 //推送统计信息
                 StatisticsMsgsVo statisticsMsgsVo = new StatisticsMsgsVo();
@@ -441,7 +440,7 @@ public class WebSocketServer {
                 //所有集中控制器信息
                 findGatewayOffline = lightIotCommServiceApi.findGatewayOffline();
                 Group group = new Group();
-                group.setDeviceType(1);
+                group.setDeviceType(7);
                 List<Group> groupList1 = groupService.select(group);
                 List<Controllers> controllersList = new ArrayList<>();
                 if (groupList1.isEmpty()) {
