@@ -35,6 +35,7 @@ public class OfflineMsg {
             }*/
             offlineVo.setName(tControllerState.getName());
             offlineVo.setOfflinetime(String.valueOf(tControllerState.getOnoffTime()));
+            offlines.add(offlineVo);
         });
 
 

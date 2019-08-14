@@ -1,4 +1,4 @@
-server:
+ server:
   port: 9200
 
 mybatis:
