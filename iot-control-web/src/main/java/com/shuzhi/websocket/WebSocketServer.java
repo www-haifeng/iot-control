@@ -692,7 +692,7 @@ public class WebSocketServer {
                     if (status.getDevicecode() != null && status.getName()!=null){
                         //根据did查询关联表灯杆id
                         LightpoleDev lightpoleDev = new LightpoleDev();
-                        lightpoleDev.setDeviceId(status.getDevicecode());
+                        lightpoleDev.setDeviceId(status.getId());
                         lightpoleDev.setDeviceType(5);
                         LightpoleDev lightpoleDev1 = lightpoleDevService.selectOne(lightpoleDev);
                         if (lightpoleDev1 != null){
