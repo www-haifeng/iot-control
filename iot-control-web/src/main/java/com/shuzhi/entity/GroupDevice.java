@@ -37,6 +37,6 @@ private static final long serialVersionUID=1L;
      * 设备id
      */
     @Column(name = "device_id")
-    private String deviceId;
+    private Integer deviceId;
     
 }

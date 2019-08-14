@@ -1,6 +1,9 @@
 package com.shuzhi.websocket.socketvo;
 
 import com.shuzhi.light.entities.TLoopStateDto;
+import com.shuzhi.lightiotcomm.entities.ControllerApi;
+import com.shuzhi.lightiotcomm.entities.LoopRedis;
+import com.shuzhi.lightiotcomm.entities.TControllerState;
 import lombok.Data;
 
 import java.util.List;
@@ -45,14 +48,14 @@ public class StatisticsMsgsVo {
      */
     private double errornum = 0;
 
-    public void addLightNum(List<TLoopStateDto> tLoopStateDtos) {
+    public void addLightNum(List<ControllerApi> controllerStatus) {
 
-        this.total = tLoopStateDtos.size();
-        this.onnum = Math.toIntExact(tLoopStateDtos.stream().filter(tStatusDto -> tStatusDto.getState() == 1).count());
-        this.offnum = Math.toIntExact(tLoopStateDtos.stream().filter(tStatusDto -> tStatusDto.getState() == 0).count());
-        this.errornum = Math.toIntExact(tLoopStateDtos.stream().filter(tStatusDto -> tStatusDto.getState() == 0).count());
-        ;
-        this.onlinerate = String.valueOf(onnum/total*100).split("\\.")[0];
-        this.lightrate = String.valueOf((total-errornum)/total*100).split("\\.")[0];
+        this.total = controllerStatus.size();
+        this.onnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnline() == 1 ).count());
+        this.offnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnline() == 0 ).count());
+        this.errornum = 0;
+
+        this.onlinerate = String.valueOf(onnum / total * 100).split("\\.")[0];
+        this.lightrate = String.valueOf((total - errornum) / total * 100).split("\\.")[0];
     }
 }
