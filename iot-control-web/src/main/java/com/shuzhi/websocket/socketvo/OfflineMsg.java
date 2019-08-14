@@ -62,7 +62,7 @@ public class OfflineMsg {
         allStatus.forEach(tStatusDto -> {
             if (tStatusDto.getOnoff() == 0){
                 OfflineVo offlineVo = new OfflineVo();//TODO 离线设备
-                offlineVo.setId(Long.valueOf(tStatusDto.getId()));
+                offlineVo.setId(Long.valueOf(tStatusDto.getId()+""));
                 offlineVo.setName(tStatusDto.getName());
                 offlineVo.setOfflinetime(tStatusDto.getTimestamp());
                 offlineVo.setState(Integer.valueOf(tStatusDto.getState()));
