@@ -119,7 +119,7 @@ public class WebSocketServer {
      */
     private List<TLoopStateDto> loopStatus;
     private List<ControllerApi> controllerStatus;
-    private List<LoopRedis> loopOffline;
+    //private List<LoopRedis> loopOffline;
     private List<GatewayRedis> findGatewayOffline;
 
     /**
@@ -305,7 +305,7 @@ public class WebSocketServer {
             controllerStatus = lightIotCommServiceApi.findControllerStatus();
             //查询回路通过breakerID 查询 LoopRedis 得到 回路 在线离线状态
             loopStatus = lightIotCommServiceApi.findLoopStatus();
-            loopOffline = lightIotCommServiceApi.findLoopOffline();
+           // loopOffline = lightIotCommServiceApi.findLoopOffline();
             List<Loops> loops = new ArrayList<>();
             //所有单灯信息（分组）
             //if (loopStatus != null && loopStatus.size() != 0) {
@@ -427,17 +427,16 @@ public class WebSocketServer {
                 loopsList.add(loops1);
             }
 
-
             LightsLoopMsg lightsMsg = new LightsLoopMsg(loopsList);
                 messageVo.setMsg(lightsMsg);
                 messageVo.setMsgcode(220001);
                 send(code, objectMapper.writeValueAsString(messageVo));
 
-                Map<String,List<Map<String,List<Map<String,Object>>>>> map = new HashMap();
-                List<Groups> groups = new ArrayList<>();
-                Group group2 = new Group();
-                group2.setDeviceType(7);
-                List<Group> groupList = groupService.select(group2);
+//                Map<String,List<Map<String,List<Map<String,Object>>>>> map = new HashMap();
+//                List<Groups> groups = new ArrayList<>();
+//                Group group2 = new Group();
+//                group2.setDeviceType(7);
+//                List<Group> groupList = groupService.select(group2);
 
 
 
@@ -456,42 +455,74 @@ public class WebSocketServer {
                 messageVo.setMsg(offlineMsg);
                 send(code, objectMapper.writeValueAsString(messageVo));
 
+
+
+
+                List<Controllers> controllersList = new ArrayList<>();
                 //所有集中控制器信息
                 findGatewayOffline = lightIotCommServiceApi.findGatewayOffline();
-                Group group = new Group();
-                group.setDeviceType(7);
-                List<Group> groupList1 = groupService.select(group);
-                List<Controllers> controllersList = new ArrayList<>();
-                if (groupList1.isEmpty()) {
-                    groupList.forEach(groupDevice -> {
-                        findGatewayOffline.forEach(findGatewayOfflines -> {
-                            //所有集中控制器信息
-                            Controllers controllers = new Controllers();
-                            controllers.setControllerid(findGatewayOfflines.getGatewayId().toString());
-                            controllers.setControllername(groupDevice.getGroupName());
-                            controllers.setControllernum(findGatewayOfflines.getDid());
-                            controllers.setState(findGatewayOfflines.getOnline());
-                            //set回路数据
-                            //所有单灯信息
-                            List<Loops> list = new ArrayList<Loops>();
-                            loopStatus.forEach(tLoopStateDto -> {
-                                Loops loops1 = new Loops();
-                                if (tLoopStateDto.getCcuUid().equals(findGatewayOfflines.getDid())) {
-                                    loops1.setLoopid(tLoopStateDto.getId().intValue());
-                                    loops1.setLoopname(tLoopStateDto.getBreakerName());
-                                    loops1.setLoopnum(tLoopStateDto.getBreakerID());
-                                    loops1.setOnoff(tLoopStateDto.getStatus());
-                                }
-                                list.add(loops1);
-                            });
-                            controllers.setLoopsList(list);
-                        });
-                    });
+            for (GatewayRedis gatewayRedis: findGatewayOffline) {
+                Controllers controllers = new Controllers();
+                controllers.setControllerid(gatewayRedis.getGatewayId());
+                controllers.setControllername(gatewayRedis.getGatewayName());
+                controllers.setControllernum(gatewayRedis.getDid());
+                controllers.setState(gatewayRedis.getOnline());
+                List<GateWayLoops> gateWayLoopslist = new ArrayList<>();
+                for (TLoopStateDto loopStatus1 :loopStatus ) {
+                    if(loopStatus1.getCcuUid().equals(gatewayRedis.getDid())){
+                        GateWayLoops gateWayLoops = new GateWayLoops();
+                        gateWayLoops.setId(loopStatus1.getId().intValue());
+                        gateWayLoops.setName(loopStatus1.getBreakerName());
+                        gateWayLoops.setLoopnum(loopStatus1.getBreakerID());
+                        gateWayLoops.setOnoff(loopStatus1.getStatus());
+                        gateWayLoopslist.add(gateWayLoops);
+                    }
                 }
-                messageVo.setMsgcode(220005);
-                messageVo.setMsg(controllersList);
-                send(code, objectMapper.writeValueAsString(messageVo));
-                log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
+                controllers.setLoopsList(gateWayLoopslist);
+                controllersList.add(controllers);
+            }
+            ControllersMsg controllersMsg = new ControllersMsg(controllersList);
+            messageVo.setMsg(controllersMsg);
+            messageVo.setMsgcode(220005);
+            send(code, objectMapper.writeValueAsString(messageVo));
+            log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
+//                Group group = new Group();
+//                group.setDeviceType(7);
+//                List<Group> groupList1 = groupService.select(group);
+//                List<Controllers> controllersList = new ArrayList<>();
+//                if (groupList1.isEmpty()) {
+//                    groupList.forEach(groupDevice -> {
+//                        /*
+//                        findGatewayOffline.forEach(findGatewayOfflines -> {
+//                            //所有集中控制器信息
+//                            Controllers controllers = new Controllers();
+//                            controllers.setControllerid(findGatewayOfflines.getGatewayId().toString());
+//                            controllers.setControllername(groupDevice.getGroupName());
+//                            controllers.setControllernum(findGatewayOfflines.getDid());
+//                            controllers.setState(findGatewayOfflines.getOnline());
+//                            //set回路数据
+//                            //所有单灯信息
+//                            List<Loops> list = new ArrayList<Loops>();
+//                            loopStatus.forEach(tLoopStateDto -> {
+//                                Loops loops1 = new Loops();
+//                                if (tLoopStateDto.getCcuUid().equals(findGatewayOfflines.getDid())) {
+//                                    loops1.setLoopid(tLoopStateDto.getId().intValue());
+//                                    loops1.setLoopname(tLoopStateDto.getBreakerName());
+//                                    loops1.setLoopnum(tLoopStateDto.getBreakerID());
+//                                    loops1.setOnoff(tLoopStateDto.getStatus());
+//                                }
+//                                list.add(loops1);
+//                            });
+//                            controllers.setLoopsList(list);
+//                        });
+//                        */
+//
+//                    });
+//                }
+//                messageVo.setMsgcode(220005);
+//                messageVo.setMsg(controllersList);
+//                send(code, objectMapper.writeValueAsString(messageVo));
+//                log.info("照明定时任务时间 : {}", messageVo.getTimestamp());
             //}
         }
     }

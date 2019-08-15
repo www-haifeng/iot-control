@@ -1,5 +1,6 @@
 package com.shuzhi.websocket.socketvo;
 
+import com.shuzhi.websocket.GateWayLoops;
 import lombok.Data;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public class Controllers {
     /**
      * 集中控制器id
      */
-    private String controllerid;
+    private Integer controllerid;
     /**
      * 分组名称名称
      */
@@ -27,5 +28,5 @@ public class Controllers {
      */
     private Integer state;
 
-    private List<Loops> loopsList;
+    private List<GateWayLoops> loopsList;
 }

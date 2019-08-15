@@ -1,6 +1,5 @@
 package com.shuzhi.websocket.socketvo;
 
-import com.shuzhi.entity.LightpoleDevs;
 import lombok.Data;
 
 import java.util.List;
