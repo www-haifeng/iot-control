@@ -13,13 +13,19 @@ import java.io.Serializable;
 public class TGatewayInfo implements Serializable {
     private Long id;
 
-    private String name;
+    //private String lamppostid;
 
-    private String did;
+    //private String did;
 
     private Double latitude;
 
     private Double longitude;
+
+    //为了前端好调用,所以把网关改成灯杆字段,
+
+    private Integer lamppostid;
+
+    private String lamppostname;
 
 
 }
