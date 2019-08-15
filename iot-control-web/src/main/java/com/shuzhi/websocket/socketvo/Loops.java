@@ -1,5 +1,6 @@
 package com.shuzhi.websocket.socketvo;
 
+import com.shuzhi.entity.LightpoleDevs;
 import lombok.Data;
 
 import java.util.List;
@@ -16,5 +17,5 @@ public class Loops {
     private Integer state;
     private Integer onoff;
     List<Lampposts> lampposts;
-
+    //List<LightpoleDevs> lampposts;
 }

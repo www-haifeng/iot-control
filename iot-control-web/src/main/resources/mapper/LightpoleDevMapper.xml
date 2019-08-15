@@ -11,4 +11,50 @@
         <result property="deviceType" column="device_type" />
     </resultMap>
 
+    <resultMap type="com.shuzhi.entity.GroupLightpoleDev" id="groupLightpoleMap">
+
+        <result  property="groupid" column="groupid"/>
+        <result  property="groupname" column="groupname"/>
+        <collection property="lampposts" ofType="com.shuzhi.entity.LightpoleDevs">
+            <result property="lamppostid" column="lamppostid"/>
+            <result property="lamppostname" column="lamppostname"/>
+            <collection property="linghts" ofType="com.shuzhi.entity.ControllerLights">
+                <result property="id" column="device_id"/>
+            </collection>
+        </collection>
+
+    </resultMap>
+
+
+
+    <resultMap type="com.shuzhi.entity.LightpoleDevs" id="lightpoleMap">
+            <result property="lamppostid" column="lamppostid"/>
+            <result property="lamppostname" column="lamppostname"/>
+            <collection property="linghts" ofType="com.shuzhi.entity.ControllerLights">
+                <result property="id" column="device_id"/>
+            </collection>
+    </resultMap>
+
+    <select id="groupLightpoleDev"  resultMap="groupLightpoleMap">
+         SELECT
+	DISTINCT   g.group_name as groupname,g.id as  groupid,g.device_type,l.lamppostname,l.lamppostid,gd.device_id
+FROM
+	t_group
+	G LEFT JOIN t_group_device gd ON gd.group_id = G.ID
+	LEFT JOIN t_lightpole_dev ld ON ld.device_id = gd.device_id
+	LEFT JOIN t_light_pole l ON l.id = ld.lamppostid
+WHERE
+	G.device_type = 7 and ld.device_type=7 and l.lamppostname is not null
+    </select>
+
+
+    <select id="lightpoleDev"  resultMap="lightpoleMap">
+      SELECT
+        lp.lamppostname,lp.lamppostid,ld.device_id
+        FROM t_light_pole lp  LEFT JOIN  t_lightpole_dev ld ON ld.lamppostid = lp.lamppostid
+        WHERE
+        ld.device_type=7
+    </select>
+
+
 </mapper>

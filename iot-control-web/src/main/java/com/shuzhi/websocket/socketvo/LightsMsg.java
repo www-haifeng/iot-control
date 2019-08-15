@@ -1,5 +1,7 @@
 package com.shuzhi.websocket.socketvo;
 
+import com.shuzhi.entity.ControllerLights;
+import com.shuzhi.entity.GroupLightpoleDev;
 import lombok.Data;
 
 import java.util.List;
@@ -12,9 +14,17 @@ import java.util.List;
 @Data
 public class LightsMsg {
 
-    private List<Groups> groups;
+//    private List<Groups> groups;
+//
+//    public LightsMsg(List<Groups> groups) {
+//        this.groups = groups;
+//    }
 
-    public LightsMsg(List<Groups> groups) {
+
+    private List<GroupLightpoleDev> groups;
+
+    public LightsMsg(List<GroupLightpoleDev> groups) {
         this.groups = groups;
     }
+
 }
