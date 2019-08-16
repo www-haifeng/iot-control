@@ -16,6 +16,7 @@
             //等同于socket = new WebSocket("ws://localhost:8080/xxxx/im/25");
             //var socketUrl="${request.contextPath}/im/"+$("#userId").val();
             var socketUrl="http://192.168.7.66:9201/websocket";
+            //var socketUrl="http://localhost:9201/websocket";
             socketUrl=socketUrl.replace("https","ws").replace("http","ws");
             console.log(socketUrl);
             socket = new WebSocket(socketUrl);

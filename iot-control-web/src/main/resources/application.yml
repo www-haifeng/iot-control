@@ -1,62 +1,6 @@
 server:
   port: 9201
 
-mybatis:
-  type-aliases-package: com.shuzhi.entity
-  mapper-locations: classpath:mapper/*.xml,classpath*:sdk/mapper/*.xml
-  configuration:
-    map-underscore-to-camel-case: true
-    cache-enabled: true
-
 spring:
-   application:
-    name: iot-control-web
-   datasource:
-    type: com.alibaba.druid.pool.DruidDataSource            # 当前数据源操作类型
-    driver-class-name: org.postgresql.Driver              # mysql驱动包
-    url: jdbc:postgresql://192.168.7.68:5432/iot-control?currentSchema=public&autoReconnect=true              # 数据库名称
-    username: postgres
-    password: 123456
-    dbcp2:
-      min-idle: 5                                           # 数据库连接池的最小维持连接数
-      initial-size: 5                                       # 初始化连接数
-      max-total: 5                                          # 最大连接数
-      max-wait-millis: 200                                  # 等待连接获取的最大超时时间
-   rabbitmq: #RabbitMQ相关的配置
-      host: 192.168.7.68
-      port: 5672
-      username: guest
-      password: guest
-      listener:
-        simple:
-          acknowledge-mode: manual
-          concurrency: 5
-          max-concurrency: 10
-      connection-timeout: 15000
-   redis:
-     host: 192.168.7.68
-     port: 6379
-     timeout: 2000
-eureka:
-  client: #客户端注册进eureka服务列表内
-    serviceUrl:
-       defaultZone: http://192.168.7.68:7001/eureka/
-  instance:
-    instance-id: iot-control-web9201
-    prefer-ip-address: true     #访问路径可以显示IP地址
-
-send:
-  #超时时间 单位: 秒
-  run-time: 20
-  #重试次数
-  count: 2
-  #websocket推送重试次数
-  retry: 2
-  #定时取数据的cron
-  led-cron: "*/5 * * * * ?"
-  light-cron: "*/5 * * * * ?"
-  lcd-cron: "*/5 * * * * ?"
-  platform-cron: "*/5 * * * * ?"
-  frt-cron: "*/500 * * * * ?"
-  electricity-cron: "*/5 * * * * ?"
-  spon-cron: "*/500 * * * * ?"
+  profiles:
+    active: dev

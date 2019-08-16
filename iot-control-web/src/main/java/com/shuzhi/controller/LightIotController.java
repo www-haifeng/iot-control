@@ -42,6 +42,7 @@ public class LightIotController {
         TGatewayInfo t = new TGatewayInfo();
         t.setId(tGateway.getId());
         t.setLamppostid(tGateway.getId().intValue());
+        t.setHeight(tGateway.getHeight());
         try{
             t.setLatitude(Double.parseDouble(tGateway.getLatitude()));
         }catch (Exception e){

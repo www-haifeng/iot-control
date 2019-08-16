@@ -27,5 +27,7 @@ public class TGatewayInfo implements Serializable {
 
     private String lamppostname;
 
+    private Double height;
+
 
 }
