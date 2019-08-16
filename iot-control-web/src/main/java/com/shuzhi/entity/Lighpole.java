@@ -50,5 +50,12 @@ private static final long serialVersionUID=1L;
      */
     @Column(name = "latitude")
     private Double latitude;
-        
+
+
+    /**
+     * 高度
+     */
+    @Column(name = "height")
+    private Double height;
+
 }

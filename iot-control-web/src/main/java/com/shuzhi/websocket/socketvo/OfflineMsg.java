@@ -23,19 +23,26 @@ public class OfflineMsg {
     //智联照明离线设备
     public void offlineLightMsg(List<ControllerApi> controllerStatus) {
         controllerStatus.forEach(tControllerState -> {
-            OfflineVo offlineVo = new OfflineVo();
-            offlineVo.setId(tControllerState.getId());
-            //N表示离线 Y 表示在线
-            offlineVo.setState(tControllerState.getOnline());
+
+            if(0 == tControllerState.getOnline()){
+                OfflineVo offlineVo = new OfflineVo();
+                offlineVo.setId(tControllerState.getId());
+
+                //N表示离线 Y 表示在线
+                offlineVo.setState(0);
             /*if (tControllerState.getComm().equalsIgnoreCase("N")){
                 offlineVo.setState(0);
             }
             if(tControllerState.getComm().equalsIgnoreCase("Y")) {
                 offlineVo.setState(1);
             }*/
-            offlineVo.setName(tControllerState.getName());
-            offlineVo.setOfflinetime(String.valueOf(tControllerState.getOnoffTime()));
-            offlines.add(offlineVo);
+                offlineVo.setName(tControllerState.getName());
+                offlineVo.setOfflinetime(String.valueOf(tControllerState.getOnoffTime()));
+                offlines.add(offlineVo);
+            }
+
+
+
         });
 
 

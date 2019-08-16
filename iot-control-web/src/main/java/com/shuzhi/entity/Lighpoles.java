@@ -37,7 +37,10 @@ public class Lighpoles implements Serializable{
      * 纬度
      */
     private Double latitude;
-
+    /**
+     * 高度
+     */
+    private Double height;
     /**
      * 设备类型
      */

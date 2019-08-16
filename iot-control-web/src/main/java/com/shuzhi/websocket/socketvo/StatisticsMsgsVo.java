@@ -6,6 +6,7 @@ import com.shuzhi.lightiotcomm.entities.LoopRedis;
 import com.shuzhi.lightiotcomm.entities.TControllerState;
 import lombok.Data;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 /**
@@ -51,11 +52,22 @@ public class StatisticsMsgsVo {
     public void addLightNum(List<ControllerApi> controllerStatus) {
 
         this.total = controllerStatus.size();
-        this.onnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnline() == 1 ).count());
-        this.offnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnline() == 0 ).count());
+        this.onnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnoff() == 1 ).count());
+        this.offnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnoff() == 2 ).count());
+        double onlin = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnline() != 0 ).count());
+
         this.errornum = 0;
 
-        this.onlinerate = String.valueOf(onnum / total * 100).split("\\.")[0];
-        this.lightrate = String.valueOf((total - errornum) / total * 100).split("\\.")[0];
+       // this.onlinerate = String.valueOf(onnum / total * 100).split("\\.")[0];
+        //this.lightrate = String.valueOf(onlin / total * 100).split("\\.")[0];
+        this.onlinerate = division(onnum,total ) * 100 +"";
+        this.lightrate = division(onlin,total )* 100 +"";
+    }
+
+    public static double division(Double arg1,Double arg2) {
+        DecimalFormat df=new DecimalFormat("0.000");//设置保留3位数
+
+       return Double.parseDouble(df.format((double) arg1/arg2));
+
     }
 }

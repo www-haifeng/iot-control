@@ -10,6 +10,7 @@
         <result property="lamppostname" column="lamppostname" />
         <result property="longitude" column="longitude" />
         <result property="latitude" column="latitude" />
+        <result property="height" column="height" />
     </resultMap>
     <resultMap type="com.shuzhi.entity.Lighpoles" id="lighpolesMap">
         <result property="id" column="id" />
@@ -21,7 +22,7 @@
     </resultMap>
     <select id="findAlls" resultMap="lighpolesMap">
         SELECT
-            t.lamppostid as id,t.lamppostid,t.lamppostname,t.longitude,t.latitude ,array_to_string(ARRAY_AGG ( DISTINCT d.device_type ),',' ) as device_type
+            t.lamppostid as id,t.lamppostid,t.lamppostname,t.longitude,t.latitude ,	t.height, array_to_string(ARRAY_AGG ( DISTINCT d.device_type ),',' ) as device_type
         FROM  t_light_pole t LEFT join t_lightpole_dev  d on t.lamppostid = d.lamppostid
         GROUP BY t.id ,t.lamppostid,t.lamppostname,t.longitude,t.latitude
     </select>
