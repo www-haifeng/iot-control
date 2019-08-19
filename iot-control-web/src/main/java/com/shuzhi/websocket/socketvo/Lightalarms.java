@@ -1,6 +1,7 @@
 package com.shuzhi.websocket.socketvo;
 
 import com.shuzhi.lcd.entities.TEventMessage;
+import com.shuzhi.led.entities.TEventMessageLed;
 import lombok.Data;
 
 /**
@@ -36,6 +37,13 @@ public class Lightalarms {
     }
 
     Lightalarms(TEventMessage tEventMessage) {
+
+        this.date = tEventMessage.getAlarmtime();
+        this.order = tEventMessage.getOrder();
+        this.times = tEventMessage.getTimes();
+
+    }
+    Lightalarms(TEventMessageLed tEventMessage) {
 
         this.date = tEventMessage.getAlarmtime();
         this.order = tEventMessage.getOrder();

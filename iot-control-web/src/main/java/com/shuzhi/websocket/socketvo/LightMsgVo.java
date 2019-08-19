@@ -2,6 +2,7 @@ package com.shuzhi.websocket.socketvo;
 
 import com.shuzhi.lcd.entities.IotLcdStatusTwo;
 import com.shuzhi.lcd.entities.TEventMessage;
+import com.shuzhi.led.entities.TEventMessageLed;
 import com.shuzhi.led.entities.TStatusDto;
 import com.shuzhi.light.entities.TEvent;
 import lombok.Data;
@@ -75,7 +76,7 @@ public class LightMsgVo {
 
     }
 
-    public void lightMsgVoLed(List<TStatusDto> allStatus, List<TEventMessage> countByTime) {
+    public void lightMsgVoLed(List<TStatusDto> allStatus, List<TEventMessageLed> countByTime) {
         if (countByTime != null){
             countByTime.forEach(tEventMessage -> lightalarms.add(new Lightalarms(tEventMessage)));
             this.online = Math.toIntExact(allStatus.stream().filter(tStatusDto -> tStatusDto.getState() == 1).count());
