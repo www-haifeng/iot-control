@@ -723,9 +723,9 @@ public class WebSocketServer {
 
 
                 //推送统计信息
-                LightMsgVo lightMsgVo = new LightMsgVo();
-                lightMsgVo.lightMsgVoLed(allStatus, tEventLedService.findCountByTime());
-                messageVo.setMsg(lightMsgVo);
+                LedMsgVo ledMsgVo = new LedMsgVo();
+                ledMsgVo.ledMsgVoLed(allStatus, tEventLedService.findCountByTime());
+                messageVo.setMsg(ledMsgVo);
                 messageVo.setMsgcode(230013);
                 send(code, JSON.toJSONString(messageVo));
 
