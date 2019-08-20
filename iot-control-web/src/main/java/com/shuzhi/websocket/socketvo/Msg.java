@@ -28,6 +28,10 @@ public class Msg {
     private Integer light;
 
     /**
+     * 智联照明调光
+     */
+    private Integer  lightValue;
+    /**
      * 音量值
      */
     private Integer volume;
@@ -35,17 +39,19 @@ public class Msg {
     /**
      * lcd数组 屏id
      */
-    private List<String> lcds;
+    private List<Integer> lcds;
 
     /**
      * led数组 屏id
      */
-    private List<String> leds;
+    private List<Integer> leds;
 
     /**
-     * led数组 屏id (单灯控制、点选灯杆)
+     *灯杆照明
      */
-    private List<String> lights;
+    private List<Integer> lights;
+
+
 
     /**
      * 照明类型：1-灯箱；2-顶棚；3-logo
@@ -56,7 +62,7 @@ public class Msg {
      * 回路控制 （集中控制器）
      * @param lighttype
      */
-    private List<String> loops;
+    private List<Integer> loops;
 
     /**
      * 消息编码

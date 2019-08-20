@@ -50,15 +50,26 @@ public class StatisticsMsgsVo {
     private double errornum = 0;
 
     public void addLightNum(List<ControllerApi> controllerStatus) {
-
+        double onlin = 0;
         this.total = controllerStatus.size();
-        this.onnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnoff() == 1 ).count());
-        this.offnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnoff() == 2 ).count());
-        double onlin = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnline() != 0 ).count());
+        for (ControllerApi tStatusDto:controllerStatus) {
+            if(tStatusDto.getOnoff() == 1){
+                this.onnum++;
+            }else if(tStatusDto.getOnoff() == 4){
+                this.errornum ++;
+            }else{
+                this.offnum++;
+            }
+            if(tStatusDto.getOnline() != 0){
+                onlin ++;
+            }
+        }
 
-        this.errornum = 0;
-
-       // this.onlinerate = String.valueOf(onnum / total * 100).split("\\.")[0];
+        //this.onnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnoff() == 1 ).count());
+        //this.offnum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnoff() == 2 ).count());
+        //double onlin = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnline() != 0 ).count());
+        //this.errornum = Math.toIntExact(controllerStatus.stream().filter(tStatusDto -> tStatusDto.getOnoff() == 4 ).count());
+        //this.onlinerate = String.valueOf(onnum / total * 100).split("\\.")[0];
         //this.lightrate = String.valueOf(onlin / total * 100).split("\\.")[0];
         this.onlinerate = division(onnum,total ) * 100 +"";
         this.lightrate = division(onlin,total )* 100 +"";

@@ -19,4 +19,26 @@ public class ConstantUtils {
     public static final Integer   KYE_FRT=5;
     public static final Integer   KYE_SPON=6;
 
+
+
+    public static final String   KYE_LOOPS="loops";
+    public static final String   KYE_CCUID="ccuID";
+    public static final String   KYE_BREAKERID="breakerID";
+    public static final String   KYE_SUBCMD="subCmd";
+    public static final String   KYE_SUBTYPE="subType";
+    public static final String   KYE_LIGHTVALUE="lightValue";
+    public static final String   KYE_CMDID="cmdid";
+    public static final String   KYE_DID="did";
+    public static final String   KYE_RTUID="rtuID";
+
+
+    public static final String   KYE_CLOSE="CLOSE";
+    public static final String   KYE_OPEN="OPEN";
+    //集中控制器 调光
+    public static final String   KYE_DIMMING="dimming";
+    public static final String   KYE_OFF="off";
+    public static final String   KYE_ON="on";
+
+
+
 }
