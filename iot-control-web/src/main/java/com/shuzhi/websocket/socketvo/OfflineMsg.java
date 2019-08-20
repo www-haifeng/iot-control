@@ -73,7 +73,7 @@ public class OfflineMsg {
                 offlineVo.setId(Long.valueOf(tStatusDto.getId()));
                 offlineVo.setName(tStatusDto.getName());
                 offlineVo.setOfflinetime(tStatusDto.getTimestamp());
-                offlineVo.setState(Integer.valueOf(tStatusDto.getState()));
+                offlineVo.setState(Integer.valueOf(tStatusDto.getOnline()));
                 offlines.add(offlineVo);
             };
         });
