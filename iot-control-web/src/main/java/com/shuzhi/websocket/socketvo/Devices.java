@@ -71,7 +71,7 @@ public class Devices {
 
         this.id = Long.valueOf(tStatusDto.getId());
         this.type = 4;
-        this.state = tStatusDto.getState();
+        this.state = tStatusDto.getOnline();
         this.onoff = this.state;
         this.volume = tStatusDto.getVolume();
         this.light = tStatusDto.getLight();

@@ -11,7 +11,7 @@ spring:
    datasource:
     type: com.alibaba.druid.pool.DruidDataSource            # 当前数据源操作类型
     driver-class-name: org.postgresql.Driver              # mysql驱动包
-    url: jdbc:postgresql://192.168.7.68:5432/iot-control?currentSchema=public&autoReconnect=true              # 数据库名称
+    url: jdbc:postgresql://118.190.216.41:5432/iot-control?currentSchema=public&autoReconnect=true              # 数据库名称
     username: postgres
     password: 123456
     dbcp2:
@@ -20,7 +20,8 @@ spring:
       max-total: 5                                          # 最大连接数
       max-wait-millis: 200                                  # 等待连接获取的最大超时时间
    rabbitmq: #RabbitMQ相关的配置
-      host: 192.168.7.68
+      host: 118.190.216.41
+#      host: 192.168.7.68
       port: 5672
       username: guest
       password: guest
@@ -31,13 +32,15 @@ spring:
           max-concurrency: 10
       connection-timeout: 15000
    redis:
-     host: 192.168.7.68
+     host: 118.190.216.41
+#     host: 118.190.216.41
      port: 6379
      timeout: 2000
 eureka:
   client: #客户端注册进eureka服务列表内
     serviceUrl:
-       defaultZone: http://192.168.7.68:7001/eureka/
+       defaultZone: http://localhost:7001/eureka/
+#       defaultZone: http://192.168.7.68:7001/eureka/
   instance:
     instance-id: iot-control-web9201
     prefer-ip-address: true     #访问路径可以显示IP地址
