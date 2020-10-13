@@ -24,7 +24,7 @@
         <com.alibaba.version>1.0.9</com.alibaba.version>
         <fastjson.version>1.2.39</fastjson.version>
         <!-- Test -->
-        <junit.version>4.11</junit.version>
+        <junit.version>4.13.1</junit.version>
         <!-- Database -->
         <commons-lang3.version>3.2</commons-lang3.version>
         <netty.version>4.1.24.Final</netty.version>
