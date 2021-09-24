@@ -27,7 +27,7 @@
         <junit.version>4.11</junit.version>
         <!-- Database -->
         <commons-lang3.version>3.2</commons-lang3.version>
-        <netty.version>4.1.24.Final</netty.version>
+        <netty.version>4.1.68.Final</netty.version>
         <org.slf4j.version>1.7.25</org.slf4j.version>
         <postgresql.version>9.4.1212</postgresql.version>
         <logback-core>1.2.3</logback-core>
